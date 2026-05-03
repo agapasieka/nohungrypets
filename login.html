@@ -431,9 +431,13 @@
   const auth = firebase.auth();
   const db   = firebase.firestore();
 
-  // Redirect if already logged in
+  let isAuthProcessing = false;
+
+  // Redirect if already logged in (but not during active signup/login)
   auth.onAuthStateChanged(user => {
-    if (user) window.location.href = 'profile.html';
+    if (user && !isAuthProcessing) {
+      window.location.href = 'profile.html';
+    }
   });
 
   // ── TABS ───────────────────────────────────────────────
@@ -504,6 +508,7 @@
     const btn = document.getElementById('signup-btn');
     btn.disabled = true;
     btn.textContent = 'Creating account...';
+    isAuthProcessing = true;
 
     try {
       const result = await auth.createUserWithEmailAndPassword(email, password);
@@ -516,6 +521,7 @@
       showToast('🎉 Welcome to NoHungryPets, ' + name + '!', 'success');
       setTimeout(() => window.location.href = 'profile.html', 1200);
     } catch (err) {
+      isAuthProcessing = false;
       showErr('signup-error', friendlyErr(err.code));
       btn.disabled = false;
       btn.textContent = 'Create free account 🐾';
@@ -534,12 +540,14 @@
     const btn = document.getElementById('login-btn');
     btn.disabled = true;
     btn.textContent = 'Logging in...';
+    isAuthProcessing = true;
 
     try {
       await auth.signInWithEmailAndPassword(email, password);
       showToast('Welcome back! 🐾', 'success');
       setTimeout(() => window.location.href = 'profile.html', 1000);
     } catch (err) {
+      isAuthProcessing = false;
       showErr('login-error', friendlyErr(err.code));
       btn.disabled = false;
       btn.textContent = 'Log in to my account';
@@ -548,6 +556,7 @@
 
   // ── GOOGLE ─────────────────────────────────────────────
   async function handleGoogle() {
+    isAuthProcessing = true;
     const provider = new firebase.auth.GoogleAuthProvider();
     try {
       const result = await auth.signInWithPopup(provider);
@@ -564,6 +573,7 @@
       showToast('Signed in with Google! 🐾', 'success');
       setTimeout(() => window.location.href = 'profile.html', 1000);
     } catch (err) {
+      isAuthProcessing = false;
       const active = document.querySelector('.auth-form.active');
       showErr(active.id === 'form-signup' ? 'signup-error' : 'login-error', friendlyErr(err.code));
     }
