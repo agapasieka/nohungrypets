@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Contact – NoHungryPets</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .wrap { max-width: 950px; margin: 0 auto; padding: 0 2.5rem 5rem; }
+    .card {
+      background: white; border-radius: 24px; padding: 2rem;
+      box-shadow: var(--card-shadow);
+    }
+    .card h2 {
+      margin: 0 0 0.5rem;
+      font-family: 'Fraunces', serif;
+      color: var(--brown);
+      font-weight: 900;
+      font-size: 1.7rem;
+    }
+    .card p { margin: 0 0 1.25rem; color: var(--brown-mid); font-weight: 500; line-height: 1.65; }
+    .contact-row { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
+    .email-pill {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.55rem 0.9rem;
+      border-radius: 999px;
+      background: rgba(232,115,58,0.10);
+      border: 1px solid rgba(232,115,58,0.18);
+      color: var(--orange-deep);
+      font-weight: 900;
+      text-decoration: none;
+    }
+    .email-pill:hover { background: rgba(232,115,58,0.14); }
+    .hint { color: var(--muted); font-weight: 700; font-size: 0.92rem; margin-top: 0.75rem; }
+    @media (max-width: 800px) { .wrap { padding: 0 1.5rem 4rem; } }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">🐾 No<span>Hungry</span>Pets</a>
+  <div class="nav-links">
+    <a href="listings.html">Browse listings</a>
+    <a href="map.html">Map view</a>
+    <a href="post.html">Post a listing</a>
+    <a href="profile.html">My account</a>
+    <a href="post.html" class="btn-nav">+ Post free</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="page-header-inner">
+    <div class="page-tag">✦ Contact</div>
+    <h1>Say <em>hello</em></h1>
+    <p>For now, the easiest way to reach us is by email.</p>
+  </div>
+</div>
+
+<main class="wrap">
+  <section class="card">
+    <h2>Email</h2>
+    <p>If you have feedback, ideas, or spot anything that needs fixing, send us a note.</p>
+    <div class="contact-row">
+      <a class="email-pill" href="mailto:info.nohungrypets@gmail.com">✉️ info.nohungrypets@gmail.com</a>
+      <a class="btn-secondary" href="index.html">Back to home</a>
+    </div>
+    <div class="hint">We’re still building — replies might be a little slow.</div>
+  </section>
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <a href="index.html" class="footer-logo">🐾 No<span>Hungry</span>Pets</a>
+    <div class="footer-links">
+      <a href="index.html">Home</a>
+      <a href="listings.html">Listings</a>
+      <a href="post.html">Post</a>
+      <a href="map.html">Map</a>
+      <a href="contact.html">Contact</a>
+    </div>
+    <div class="footer-copy">© 2026 NoHungryPets.co.uk · Helping pets eat, one bowl at a time 🐾</div>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>
+

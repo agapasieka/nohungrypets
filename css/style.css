@@ -1,0 +1,186 @@
+/* Shared styling for NoHungryPets pages (static frontend). */
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+:root {
+  --cream: #FAF6EF;
+  --warm: #F2E8D9;
+  --orange: #E8733A;
+  --orange-deep: #C4542A;
+  --green: #3A7D5A;
+  --green-light: #EAF3EC;
+  --brown: #3D2B1F;
+  --brown-mid: #7A5C4A;
+  --text: #2A1F17;
+  --muted: #9A8578;
+  --white: #FFFFFF;
+  --card-shadow: 0 4px 24px rgba(61,43,31,0.10);
+}
+
+body {
+  font-family: 'DM Sans', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: var(--cream);
+  color: var(--text);
+  overflow-x: hidden;
+}
+
+a { color: inherit; }
+
+/* ── NAV ── */
+nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2.5rem;
+  background: rgba(250,246,239,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(61,43,31,0.08);
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: 'Fraunces', ui-serif, Georgia, serif;
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: var(--brown);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.nav-logo span { color: var(--orange); }
+
+.nav-links { display: flex; align-items: center; gap: 1.4rem; flex-wrap: wrap; justify-content: flex-end; }
+.nav-links a {
+  text-decoration: none;
+  color: var(--brown-mid);
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: color 0.2s, opacity 0.2s;
+}
+.nav-links a:hover { color: var(--orange); }
+.nav-links a.active { color: var(--brown); }
+
+.btn-nav {
+  background: var(--orange);
+  color: white !important;
+  padding: 0.55rem 1.2rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  text-decoration: none;
+  transition: background 0.2s, transform 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.btn-nav:hover { background: var(--orange-deep); transform: translateY(-1px); }
+
+/* ── PAGE HEADER ── */
+.page-header {
+  padding: 3.25rem 2.5rem 2.25rem;
+}
+.page-header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.page-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(232,115,58,0.10);
+  color: var(--orange-deep);
+  font-weight: 800;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.page-header h1 {
+  margin: 0.75rem 0 0.75rem;
+  font-family: 'Fraunces', ui-serif, Georgia, serif;
+  font-size: clamp(2rem, 4vw, 3.15rem);
+  line-height: 1.08;
+  color: var(--brown);
+}
+.page-header h1 em { font-style: italic; color: var(--orange); }
+.page-header p { margin: 0; color: var(--brown-mid); font-weight: 500; max-width: 64ch; }
+
+/* ── BUTTONS ── */
+.btn-primary, .btn-secondary, .btn-full {
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 800;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.btn-primary {
+  background: var(--orange);
+  color: white;
+  padding: 0.9rem 1.3rem;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(232,115,58,0.22);
+}
+.btn-primary:hover { background: var(--orange-deep); }
+.btn-secondary {
+  background: rgba(61,43,31,0.06);
+  color: var(--brown);
+  padding: 0.9rem 1.3rem;
+  border-radius: 14px;
+}
+.btn-secondary:hover { background: rgba(61,43,31,0.10); }
+.btn-full { width: 100%; padding: 0.9rem 1.1rem; border-radius: 14px; }
+
+/* ── FOOTER ── */
+footer { padding: 3rem 2.5rem; border-top: 1px solid rgba(61,43,31,0.08); }
+.footer-inner { max-width: 1200px; margin: 0 auto; display: grid; gap: 1rem; }
+.footer-logo {
+  font-family: 'Fraunces', ui-serif, Georgia, serif;
+  font-weight: 900;
+  color: var(--brown);
+  text-decoration: none;
+  font-size: 1.2rem;
+}
+.footer-logo span { color: var(--orange); }
+.footer-links { display: flex; gap: 1rem; flex-wrap: wrap; }
+.footer-links a { color: var(--brown-mid); text-decoration: none; font-weight: 600; font-size: 0.9rem; }
+.footer-links a:hover { color: var(--orange); }
+.footer-copy { color: var(--muted); font-size: 0.85rem; font-weight: 600; }
+
+/* ── TOAST ── */
+.toast-wrap {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  display: grid;
+  gap: 10px;
+  z-index: 9999;
+}
+.toast {
+  background: rgba(61,43,31,0.92);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 14px;
+  padding: 0.8rem 1rem;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.25);
+  max-width: min(360px, calc(100vw - 36px));
+  font-weight: 700;
+}
+.toast.success { background: rgba(58,125,90,0.95); }
+.toast.error { background: rgba(196,84,42,0.95); }
+
+@media (max-width: 800px) {
+  nav { padding: 1rem 1.5rem; }
+  .page-header { padding: 2.75rem 1.5rem 2rem; }
+  footer { padding: 2.5rem 1.5rem; }
+}

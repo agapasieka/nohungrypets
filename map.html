@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Map View – NoHungryPets</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 0 2.5rem 5rem; }
+    .card {
+      background: white; border-radius: 24px; padding: 2rem;
+      box-shadow: var(--card-shadow);
+    }
+    .card h2 {
+      margin: 0 0 0.5rem;
+      font-family: 'Fraunces', serif;
+      color: var(--brown);
+      font-weight: 900;
+      font-size: 1.6rem;
+    }
+    .card p { margin: 0 0 1.25rem; color: var(--brown-mid); font-weight: 500; line-height: 1.6; }
+    .map-placeholder {
+      height: 380px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(58,125,90,0.10), rgba(232,115,58,0.10));
+      border: 1px solid rgba(61,43,31,0.10);
+      display: grid;
+      place-items: center;
+      color: var(--brown-mid);
+      font-weight: 800;
+    }
+    .cta-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.25rem; }
+    @media (max-width: 800px) { .wrap { padding: 0 1.5rem 4rem; } }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">🐾 No<span>Hungry</span>Pets</a>
+  <div class="nav-links">
+    <a href="listings.html">Browse listings</a>
+    <a href="map.html" class="active">Map view</a>
+    <a href="post.html">Post a listing</a>
+    <a href="profile.html">My account</a>
+    <a href="post.html" class="btn-nav">+ Post free</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="page-header-inner">
+    <div class="page-tag">✦ Map view</div>
+    <h1>Find listings <em>nearby</em></h1>
+    <p>This page is under development. For now, browse listings in the list view.</p>
+  </div>
+</div>
+
+<main class="wrap">
+  <section class="card">
+    <h2>Map coming soon</h2>
+    <p>We’ll add a proper interactive map once the backend is in place and listings can be loaded dynamically.</p>
+    <div class="map-placeholder">📍 Map under development</div>
+    <div class="cta-row">
+      <a class="btn-primary" href="listings.html">Browse listings</a>
+      <a class="btn-secondary" href="index.html">Back to home</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <a href="index.html" class="footer-logo">🐾 No<span>Hungry</span>Pets</a>
+    <div class="footer-links">
+      <a href="index.html">Home</a>
+      <a href="listings.html">Listings</a>
+      <a href="post.html">Post</a>
+      <a href="map.html">Map</a>
+    </div>
+    <div class="footer-copy">© 2026 NoHungryPets.co.uk · Helping pets eat, one bowl at a time 🐾</div>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>
+
