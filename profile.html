@@ -462,6 +462,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/main.js"></script>
 <script>
@@ -496,6 +497,50 @@
       // Pre-fill edit form
       document.getElementById('edit-name').value = profile.name || '';
       document.getElementById('edit-postcode').value = profile.postcode || '';
+    }
+
+    // Load User Listings
+    const listingsContainer = document.querySelector('.my-listings');
+    listingsContainer.innerHTML = '<p style="padding:1rem;color:var(--muted)">Loading listings...</p>';
+    
+    try {
+      const snapshot = await db.collection('listings').where('userId', '==', user.uid).orderBy('createdAt', 'desc').get();
+      listingsContainer.innerHTML = '';
+      
+      if (snapshot.empty) {
+        listingsContainer.innerHTML = '<p style="padding:1rem;color:var(--muted)">You haven\'t posted any listings yet.</p>';
+      } else {
+        const animalEmojis = { 'Dog':'🦴','Cat':'🐟','Rabbit':'🥬','Small pets':'🌾','Bird':'🐦','Reptile':'🦎','Fish':'🐟','Horse':'🌿','Farm animal':'🌿' };
+        
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const statusColor = data.status === 'archived' ? 'var(--muted)' : 'var(--green)';
+          const statusText = data.status === 'archived' ? 'Claimed / Archived' : 'Available';
+          
+          let animalType = data.animals && data.animals.length > 0 ? data.animals[0] : 'Other';
+          const animalIcon = animalEmojis[animalType] || '📦';
+          const time = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleDateString() : 'Just now';
+          
+          const div = document.createElement('div');
+          div.className = 'my-listing-row';
+          div.innerHTML = `
+            <div class="my-listing-icon">${animalIcon}</div>
+            <div class="my-listing-info">
+              <div class="my-listing-name">${data.itemName || 'Untitled Item'}</div>
+              <div class="my-listing-meta">${data.category || 'Item'} · Posted ${time} · <span class="status-span" style="color:${statusColor};font-weight:600">${statusText}</span></div>
+            </div>
+            <div class="my-listing-actions">
+              ${data.status !== 'archived' ? `<button class="btn-sm btn-sm-edit" onclick="archiveListing('${doc.id}', this)">Archive</button>` : ''}
+              <button class="btn-sm btn-sm-delete" onclick="deleteListing('${doc.id}', this)">Delete</button>
+            </div>
+          `;
+          listingsContainer.appendChild(div);
+        });
+      }
+    } catch(err) {
+      console.error(err);
+      // Fallback if index isn't built yet
+      listingsContainer.innerHTML = '<p style="padding:1rem;color:var(--orange)">Error loading listings. If you just created the database, the index might still be building.</p>';
     }
 
     const joined = user.metadata.creationTime
@@ -551,12 +596,66 @@
     }
   }
 
+  // ── ARCHIVE LISTING ────────────────────────────────────
+  async function archiveListing(id, btn) {
+    if (!confirm('Mark this listing as claimed and archive it? Photos will be deleted to save space.')) return;
+    btn.disabled = true;
+    btn.textContent = 'Archiving...';
+    try {
+      const docRef = db.collection('listings').doc(id);
+      const doc = await docRef.get();
+      const data = doc.data();
+      
+      // Delete images from storage
+      if (data.imageUrls && data.imageUrls.length > 0) {
+        const storage = firebase.storage();
+        for (const url of data.imageUrls) {
+          try { await storage.refFromURL(url).delete(); } catch(e) { console.warn('Could not delete image', e); }
+        }
+      }
+      
+      // Update Firestore document
+      await docRef.update({ status: 'archived', imageUrls: [] });
+      
+      showToast('Listing archived successfully!', 'success');
+      const span = btn.parentElement.previousElementSibling.querySelector('.status-span');
+      span.style.color = 'var(--muted)';
+      span.textContent = 'Claimed / Archived';
+      btn.remove();
+    } catch(e) {
+      console.error(e);
+      showToast('Error archiving listing.', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Archive';
+    }
+  }
+
   // ── DELETE LISTING ─────────────────────────────────────
-  function deleteListing(btn) {
-    if (!confirm('Delete this listing?')) return;
-    btn.closest('.my-listing-row').style.opacity = '0';
-    setTimeout(() => btn.closest('.my-listing-row').remove(), 300);
-    showToast('Listing deleted.', 'success');
+  async function deleteListing(id, btn) {
+    if (!confirm('Permanently delete this listing?')) return;
+    btn.disabled = true;
+    btn.textContent = 'Deleting...';
+    try {
+      const docRef = db.collection('listings').doc(id);
+      const doc = await docRef.get();
+      if (doc.exists) {
+        const data = doc.data();
+        if (data.imageUrls && data.imageUrls.length > 0) {
+          const storage = firebase.storage();
+          for (const url of data.imageUrls) {
+            try { await storage.refFromURL(url).delete(); } catch(e) {}
+          }
+        }
+        await docRef.delete();
+      }
+      btn.closest('.my-listing-row').style.opacity = '0';
+      setTimeout(() => btn.closest('.my-listing-row').remove(), 300);
+      showToast('Listing deleted.', 'success');
+    } catch(e) {
+      showToast('Error deleting listing.', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Delete';
+    }
   }
 
   // ── LOGOUT ─────────────────────────────────────────────
