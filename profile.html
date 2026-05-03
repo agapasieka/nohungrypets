@@ -462,7 +462,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/main.js"></script>
 <script>
@@ -648,16 +647,8 @@
     try {
       const docRef = db.collection('listings').doc(id);
       
-      // Delete images from storage
-      if (imageUrls && imageUrls.length > 0) {
-        const storage = firebase.storage();
-        for (const url of imageUrls) {
-          try { await storage.refFromURL(url).delete(); } catch(e) { console.warn('Could not delete image', e); }
-        }
-      }
-      
-      // Update Firestore document
-      await docRef.update({ status: 'archived', imageUrls: [] });
+      // Update Firestore document (images remain in Cloudinary)
+      await docRef.update({ status: 'archived' });
       console.log(`Auto-archived listing ${id}`);
     } catch(e) {
       console.error(`Failed to auto-archive ${id}`, e);
@@ -673,13 +664,7 @@
       const docRef = db.collection('listings').doc(id);
       const doc = await docRef.get();
       if (doc.exists) {
-        const data = doc.data();
-        if (data.imageUrls && data.imageUrls.length > 0) {
-          const storage = firebase.storage();
-          for (const url of data.imageUrls) {
-            try { await storage.refFromURL(url).delete(); } catch(e) {}
-          }
-        }
+        // We delete the Firestore doc, but images remain in Cloudinary
         await docRef.delete();
       }
       btn.closest('.my-listing-row').style.opacity = '0';
