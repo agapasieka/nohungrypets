@@ -33,6 +33,10 @@
       overflow-x: hidden;
     }
 
+    a { color: inherit; }
+    a:visited { color: inherit; }
+    a:active { color: inherit; }
+
     /* ── SITE NOTICE ── */
     .site-notice {
       position: fixed;
@@ -57,7 +61,7 @@
       letter-spacing: 0.01em;
       text-align: center;
     }
-    body.has-notice nav { top: 48px; }
+    body.has-notice { padding-top: 48px; }
     @keyframes noticePulse {
       0%, 100% { filter: saturate(1) brightness(1); box-shadow: 0 0 0 rgba(58, 125, 90, 0); }
       50% { filter: saturate(1.15) brightness(1.08); box-shadow: 0 10px 30px rgba(58, 125, 90, 0.22); }
@@ -66,13 +70,13 @@
       .site-notice { animation: none; }
     }
     @media (max-width: 600px) {
-      body.has-notice nav { top: 56px; }
+      body.has-notice { padding-top: 56px; }
       .site-notice { padding: 0.75rem 1rem; }
     }
 
     /* ── NAV ── */
     nav {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      position: relative; z-index: 100;
       display: flex; align-items: center; justify-content: space-between;
       padding: 1rem 2.5rem;
       background: rgba(250,246,239,0.92);
@@ -105,7 +109,7 @@
     .hero {
       min-height: 100vh;
       display: flex; align-items: center;
-      padding: 8rem 2.5rem 4rem;
+      padding: 5rem 2.5rem 4rem;
       position: relative;
       background: var(--cream);
       overflow: hidden;
