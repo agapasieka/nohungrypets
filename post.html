@@ -392,7 +392,15 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/main.js"></script>
 <script>
+  let selectedFiles = []; // Store selected files for upload
+  
   function showToast(msg, type) {
     const t = document.getElementById('toast');
     t.textContent = msg; t.className = 'toast show ' + type;
@@ -427,14 +435,17 @@
 
   function handleFiles(files) {
     const prev = document.getElementById('photo-previews');
-    const existing = prev.querySelectorAll('.photo-preview').length;
-    [...files].slice(0, 4 - existing).forEach(f => {
+    const existing = selectedFiles.length;
+    const newFiles = [...files].slice(0, 4 - existing);
+    
+    newFiles.forEach(f => {
+      selectedFiles.push(f);
       const reader = new FileReader();
       reader.onload = e => {
         const div = document.createElement('div');
         div.className = 'photo-preview';
         div.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:12px">
-          <button class="photo-remove" onclick="this.parentElement.remove()" type="button">✕</button>`;
+          <button class="photo-remove" onclick="removePhoto(this, '${f.name}')" type="button">✕</button>`;
         prev.appendChild(div);
         document.getElementById('preview-img').innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover">`;
       };
@@ -442,26 +453,132 @@
     });
   }
 
+  function removePhoto(btn, fileName) {
+    selectedFiles = selectedFiles.filter(f => f.name !== fileName);
+    btn.parentElement.remove();
+    if (selectedFiles.length === 0) {
+      document.getElementById('preview-img').innerHTML = '📦';
+      updatePreview();
+    }
+  }
+
+  // Compress image using Canvas API
+  function compressImage(file, maxWidth = 800) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let w = img.width, h = img.height;
+          if (w > maxWidth) { h = Math.round((maxWidth / w) * h); w = maxWidth; }
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.8);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   function handleDragOver(e) { e.preventDefault(); document.getElementById('upload-zone').classList.add('dragover'); }
   function handleDragLeave() { document.getElementById('upload-zone').classList.remove('dragover'); }
   function handleDrop(e) { e.preventDefault(); handleFiles(e.dataTransfer.files); handleDragLeave(); }
 
-  function submitListing() {
+  async function submitListing() {
+    const user = firebase.auth().currentUser;
+    if (!user) {
+      showToast('You must be logged in to post!', 'error');
+      setTimeout(() => window.location.href = 'login.html', 1500);
+      return;
+    }
+
     const name   = document.getElementById('item-name').value.trim();
-    const email  = document.getElementById('poster-email').value.trim();
+    const category = document.getElementById('item-category').value;
+    const condition = document.getElementById('item-condition').value;
+    const desc   = document.getElementById('item-desc').value.trim();
     const poster = document.getElementById('poster-name').value.trim();
-    const post   = document.getElementById('postcode').value.trim();
+    const email  = document.getElementById('poster-email').value.trim();
+    const post   = document.getElementById('postcode').value.trim().toUpperCase();
+    const pickup = document.getElementById('pickup').value.trim();
     const terms  = document.getElementById('post-terms').checked;
+    
+    const animals = [...document.querySelectorAll('.animal-btn.selected')].map(b => b.textContent.replace(/[^\w\s]/gi, '').trim());
 
     if (!name)   return showToast('Please add an item name!', 'error');
+    if (!category) return showToast('Please select a category!', 'error');
     if (!poster) return showToast('Please enter your name!', 'error');
     if (!email)  return showToast('Please enter your email!', 'error');
     if (!post)   return showToast('Please enter your postcode!', 'error');
     if (!terms)  return showToast('Please agree to the community guidelines!', 'error');
 
-    document.getElementById('form-container').style.display = 'none';
-    document.getElementById('success-state').style.display = 'block';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const btn = document.querySelector('.btn-submit');
+    const origText = btn.innerHTML;
+    btn.innerHTML = '🐾 Uploading...';
+    btn.disabled = true;
+
+    try {
+      const imageUrls = [];
+      const cloudName = 'dyfrrqxfr';
+      const uploadPreset = 'iev7fjfi';
+      
+      // Compress and upload images to Cloudinary
+      for (let i = 0; i < selectedFiles.length; i++) {
+        btn.innerHTML = `🐾 Uploading photo ${i+1} of ${selectedFiles.length}...`;
+        const file = selectedFiles[i];
+        const compressedBlob = await compressImage(file);
+        
+        const formData = new FormData();
+        formData.append('file', compressedBlob);
+        formData.append('upload_preset', uploadPreset);
+        
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!res.ok) throw new Error('Cloudinary upload failed');
+        const data = await res.json();
+        imageUrls.push(data.secure_url);
+      }
+
+      btn.innerHTML = '🐾 Saving listing...';
+
+      // Save to Firestore
+      await db.collection('listings').add({
+        userId: user.uid,
+        posterName: poster,
+        posterEmail: email,
+        postcode: post,
+        itemName: name,
+        category,
+        condition,
+        description: desc,
+        pickupInstructions: pickup,
+        animals,
+        imageUrls,
+        status: 'available',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      
+      // Update user stats
+      const userRef = db.collection('users').doc(user.uid);
+      await userRef.update({
+        listings: firebase.firestore.FieldValue.increment(1)
+      });
+
+      document.getElementById('form-container').style.display = 'none';
+      document.getElementById('success-state').style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      console.error(err);
+      showToast('Error posting listing. Please try again.', 'error');
+    } finally {
+      btn.innerHTML = origText;
+      btn.disabled = false;
+    }
   }
 
   function resetForm(e) {
@@ -470,6 +587,7 @@
     document.getElementById('success-state').style.display = 'none';
     document.getElementById('item-name').value = '';
     document.getElementById('photo-previews').innerHTML = '';
+    selectedFiles = [];
     document.querySelectorAll('.animal-btn').forEach(b => b.classList.remove('selected'));
     updatePreview();
   }

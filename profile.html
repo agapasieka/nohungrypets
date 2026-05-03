@@ -498,6 +498,72 @@
       document.getElementById('edit-postcode').value = profile.postcode || '';
     }
 
+    // Load User Listings
+    const listingsContainer = document.querySelector('.my-listings');
+    listingsContainer.innerHTML = '<p style="padding:1rem;color:var(--muted)">Loading listings...</p>';
+    
+    try {
+      const snapshot = await db.collection('listings').where('userId', '==', user.uid).orderBy('createdAt', 'desc').get();
+      listingsContainer.innerHTML = '';
+      
+      if (snapshot.empty) {
+        listingsContainer.innerHTML = '<p style="padding:1rem;color:var(--muted)">You haven\'t posted any listings yet.</p>';
+      } else {
+        const animalEmojis = { 'Dog':'🦴','Cat':'🐟','Rabbit':'🥬','Small pets':'🌾','Bird':'🐦','Reptile':'🦎','Fish':'🐟','Horse':'🌿','Farm animal':'🌿' };
+        
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          let statusColor = 'var(--green)';
+          let statusText = 'Available';
+          
+          if (data.status === 'archived') {
+            statusColor = 'var(--muted)';
+            statusText = 'Archived';
+          } else if (data.status === 'claimed') {
+            statusColor = 'var(--orange)';
+            statusText = 'Claimed (Auto-archives in 24h)';
+            
+            // Auto-archive check
+            if (data.claimedAt) {
+              const claimedTime = data.claimedAt.toDate().getTime();
+              const now = Date.now();
+              const hours24 = 24 * 60 * 60 * 1000;
+              if (now - claimedTime > hours24) {
+                // Trigger auto-archive in background
+                autoArchiveListing(doc.id, data.imageUrls);
+                statusColor = 'var(--muted)';
+                statusText = 'Archived';
+                data.status = 'archived'; // update local state for rendering
+              }
+            }
+          }
+          
+          let animalType = data.animals && data.animals.length > 0 ? data.animals[0] : 'Other';
+          const animalIcon = animalEmojis[animalType] || '📦';
+          const time = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleDateString() : 'Just now';
+          
+          const div = document.createElement('div');
+          div.className = 'my-listing-row';
+          div.innerHTML = `
+            <div class="my-listing-icon">${animalIcon}</div>
+            <div class="my-listing-info">
+              <div class="my-listing-name">${data.itemName || 'Untitled Item'}</div>
+              <div class="my-listing-meta">${data.category || 'Item'} · Posted ${time} · <span class="status-span" style="color:${statusColor};font-weight:600">${statusText}</span></div>
+            </div>
+            <div class="my-listing-actions">
+              ${data.status === 'available' ? `<button class="btn-sm btn-sm-edit" onclick="markClaimed('${doc.id}', this)">Mark Claimed</button>` : ''}
+              <button class="btn-sm btn-sm-delete" onclick="deleteListing('${doc.id}', this)">Delete</button>
+            </div>
+          `;
+          listingsContainer.appendChild(div);
+        });
+      }
+    } catch(err) {
+      console.error(err);
+      // Fallback if index isn't built yet
+      listingsContainer.innerHTML = '<p style="padding:1rem;color:var(--orange)">Error loading listings. If you just created the database, the index might still be building.</p>';
+    }
+
     const joined = user.metadata.creationTime
       ? new Date(user.metadata.creationTime).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
       : 'Recently';
@@ -551,12 +617,64 @@
     }
   }
 
+  // ── MARK AS CLAIMED ────────────────────────────────────
+  async function markClaimed(id, btn) {
+    if (!confirm('Mark this listing as claimed? It will be hidden from the map and auto-archived in 24 hours.')) return;
+    btn.disabled = true;
+    btn.textContent = 'Updating...';
+    try {
+      const docRef = db.collection('listings').doc(id);
+      await docRef.update({ 
+        status: 'claimed', 
+        claimedAt: firebase.firestore.FieldValue.serverTimestamp() 
+      });
+      
+      showToast('Listing marked as claimed!', 'success');
+      const span = btn.parentElement.previousElementSibling.querySelector('.status-span');
+      span.style.color = 'var(--orange)';
+      span.textContent = 'Claimed (Auto-archives in 24h)';
+      btn.remove();
+    } catch(e) {
+      console.error(e);
+      showToast('Error updating listing.', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Mark Claimed';
+    }
+  }
+
+  // ── AUTO-ARCHIVE (BACKGROUND) ──────────────────────────
+  async function autoArchiveListing(id, imageUrls) {
+    try {
+      const docRef = db.collection('listings').doc(id);
+      
+      // Update Firestore document (images remain in Cloudinary)
+      await docRef.update({ status: 'archived' });
+      console.log(`Auto-archived listing ${id}`);
+    } catch(e) {
+      console.error(`Failed to auto-archive ${id}`, e);
+    }
+  }
+
   // ── DELETE LISTING ─────────────────────────────────────
-  function deleteListing(btn) {
-    if (!confirm('Delete this listing?')) return;
-    btn.closest('.my-listing-row').style.opacity = '0';
-    setTimeout(() => btn.closest('.my-listing-row').remove(), 300);
-    showToast('Listing deleted.', 'success');
+  async function deleteListing(id, btn) {
+    if (!confirm('Permanently delete this listing?')) return;
+    btn.disabled = true;
+    btn.textContent = 'Deleting...';
+    try {
+      const docRef = db.collection('listings').doc(id);
+      const doc = await docRef.get();
+      if (doc.exists) {
+        // We delete the Firestore doc, but images remain in Cloudinary
+        await docRef.delete();
+      }
+      btn.closest('.my-listing-row').style.opacity = '0';
+      setTimeout(() => btn.closest('.my-listing-row').remove(), 300);
+      showToast('Listing deleted.', 'success');
+    } catch(e) {
+      showToast('Error deleting listing.', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Delete';
+    }
   }
 
   // ── LOGOUT ─────────────────────────────────────────────
