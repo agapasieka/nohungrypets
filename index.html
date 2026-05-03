@@ -33,6 +33,53 @@
       overflow-x: hidden;
     }
 
+    /* ── SITE NOTICE ── */
+    .site-notice {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 110;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      padding: 0.6rem 1rem;
+      background: rgba(58, 125, 90, 0.95);
+      color: var(--white);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+      backdrop-filter: blur(10px);
+      animation: noticePulse 1.4s ease-in-out infinite;
+    }
+    .site-notice span {
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      text-align: center;
+    }
+    .site-notice button {
+      border: 0;
+      background: rgba(255, 255, 255, 0.18);
+      color: var(--white);
+      padding: 0.35rem 0.6rem;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .site-notice button:hover { background: rgba(255, 255, 255, 0.26); }
+    body.has-notice nav { top: 48px; }
+    @keyframes noticePulse {
+      0%, 100% { filter: saturate(1) brightness(1); box-shadow: 0 0 0 rgba(58, 125, 90, 0); }
+      50% { filter: saturate(1.15) brightness(1.08); box-shadow: 0 10px 30px rgba(58, 125, 90, 0.22); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .site-notice { animation: none; }
+    }
+    @media (max-width: 600px) {
+      body.has-notice nav { top: 56px; }
+      .site-notice { padding: 0.75rem 1rem; }
+    }
+
     /* ── NAV ── */
     nav {
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
@@ -630,6 +677,11 @@
 </head>
 <body>
 
+<div class="site-notice" id="siteNotice" role="status" aria-live="polite">
+  <span>Website under development — check back soon.</span>
+  <button type="button" id="dismissNotice" aria-label="Dismiss notice">✕</button>
+</div>
+
 <!-- NAV -->
 <nav>
   <a href="#" class="nav-logo">
@@ -643,6 +695,28 @@
     <a href="#" onclick="openModal('post')" class="btn-nav">Post for free</a>
   </div>
 </nav>
+
+<script>
+  (function () {
+    const notice = document.getElementById('siteNotice');
+    const btn = document.getElementById('dismissNotice');
+    if (!notice || !btn) return;
+
+    const key = 'nhp_notice_dismissed_v1';
+    const dismissed = window.localStorage && localStorage.getItem(key) === '1';
+    if (dismissed) {
+      notice.style.display = 'none';
+      return;
+    }
+
+    document.body.classList.add('has-notice');
+    btn.addEventListener('click', function () {
+      notice.style.display = 'none';
+      document.body.classList.remove('has-notice');
+      try { localStorage.setItem(key, '1'); } catch (e) {}
+    });
+  })();
+</script>
 
 <!-- HERO -->
 <section class="hero">
