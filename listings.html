@@ -121,6 +121,13 @@
       position: absolute; top: 10px; left: 10px; right: 10px;
       display: flex; justify-content: space-between; align-items: flex-start;
     }
+    .badge-available, .badge-gone {
+      padding: 0.25rem 0.7rem; border-radius: 50px;
+      font-size: 0.72rem; font-weight: 700; font-family: 'DM Sans', sans-serif;
+      line-height: 1; letter-spacing: 0.02em;
+    }
+    .badge-available { background: var(--green); color: white; }
+    .badge-gone { background: var(--warm); color: var(--muted); }
     .listing-card-body { padding: 1rem; }
     .listing-card-body h4 {
       font-family: 'Fraunces', serif; font-weight: 700;
