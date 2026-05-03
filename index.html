@@ -130,7 +130,7 @@
     }
     .hero-inner {
       max-width: 1200px; margin: 0 auto; width: 100%;
-      display: grid; grid-template-columns: 1fr 1fr;
+      display: grid; grid-template-columns: 1.2fr 0.8fr;
       gap: 4rem; align-items: center;
     }
     .hero-badge {
@@ -201,6 +201,9 @@
     .hero-visual {
       position: relative;
       animation: fadeUp 0.6s 0.2s ease both;
+    }
+    @media (min-width: 1000px) {
+      .hero-visual { margin-top: 2.25rem; }
     }
     .map-card {
       background: white; border-radius: 24px;
