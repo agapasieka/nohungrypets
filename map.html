@@ -7,6 +7,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
   <style>
     .wrap { max-width: 1100px; margin: 0 auto; padding: 0 2.5rem 5rem; }
     .card {
@@ -21,15 +27,11 @@
       font-size: 1.6rem;
     }
     .card p { margin: 0 0 1.25rem; color: var(--brown-mid); font-weight: 500; line-height: 1.6; }
-    .map-placeholder {
-      height: 380px;
+    #map {
+      height: 420px;
       border-radius: 18px;
-      background: linear-gradient(135deg, rgba(58,125,90,0.10), rgba(232,115,58,0.10));
       border: 1px solid rgba(61,43,31,0.10);
-      display: grid;
-      place-items: center;
-      color: var(--brown-mid);
-      font-weight: 800;
+      overflow: hidden;
     }
     .cta-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.25rem; }
     @media (max-width: 800px) { .wrap { padding: 0 1.5rem 4rem; } }
@@ -58,9 +60,9 @@
 
 <main class="wrap">
   <section class="card">
-    <h2>Map coming soon</h2>
-    <p>We’ll add a proper interactive map once the backend is in place and listings can be loaded dynamically.</p>
-    <div class="map-placeholder">📍 Map under development</div>
+    <h2>Map (OpenStreetMap)</h2>
+    <p>This map uses OpenStreetMap via Leaflet (no API key). Listings are demo pins for now.</p>
+    <div id="map" aria-label="Map showing listings"></div>
     <div class="cta-row">
       <a class="btn-primary" href="listings.html">Browse listings</a>
       <a class="btn-secondary" href="index.html">Back to home</a>
@@ -82,6 +84,48 @@
 </footer>
 
 <script src="js/main.js"></script>
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""
+></script>
+<script>
+  (function () {
+    const el = document.getElementById('map');
+    if (!el || !window.L) return;
+
+    // Default view: Burton upon Trent (matches the demo copy on the homepage).
+    const map = L.map('map', { scrollWheelZoom: false }).setView([52.805, -1.636], 13);
+
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    const demoListings = [
+      { name: 'Royal Canin Adult', animal: '🐕 Dog', miles: '0.3 miles', price: 'Free', lat: 52.807, lng: -1.634 },
+      { name: 'Whiskas Pouches x12', animal: '🐈 Cat', miles: '0.8 miles', price: 'Free', lat: 52.800, lng: -1.646 },
+      { name: 'Rabbit Pellets 2kg', animal: '🐇 Rabbit', miles: '1.2 miles', price: 'Free', lat: 52.812, lng: -1.650 }
+    ];
+
+    demoListings.forEach((d) => {
+      const html = `
+        <div style="min-width:180px">
+          <div style="font-weight:900;color:#3D2B1F">${d.name}</div>
+          <div style="margin-top:4px;color:#7A5C4A;font-weight:700;font-size:12px">${d.animal} · ${d.miles} · ${d.price}</div>
+          <div style="margin-top:10px">
+            <a href="listings.html" style="color:#E8733A;font-weight:900;text-decoration:none">Browse listings →</a>
+          </div>
+        </div>
+      `;
+      L.marker([d.lat, d.lng]).addTo(map).bindPopup(html);
+    });
+
+    // Fit to demo pins on load.
+    const bounds = L.latLngBounds(demoListings.map((d) => [d.lat, d.lng]));
+    map.fitBounds(bounds.pad(0.25));
+  })();
+</script>
 </body>
 </html>
 
