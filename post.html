@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Post a Listing – NoHungryPets</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .post-layout {
+      max-width: 1100px; margin: 0 auto;
+      padding: 0 2.5rem 5rem;
+      display: grid; grid-template-columns: 1fr 380px;
+      gap: 2.5rem; align-items: start;
+    }
+
+    /* FORM CARD */
+    .form-card {
+      background: white; border-radius: 24px;
+      padding: 2.5rem; box-shadow: var(--card-shadow);
+    }
+    .form-card h2 {
+      font-family: 'Fraunces', serif; font-size: 1.5rem;
+      font-weight: 900; color: var(--brown); margin-bottom: 0.4rem;
+    }
+    .form-card > p { font-size: 0.88rem; color: var(--muted); margin-bottom: 2rem; }
+
+    .form-section-title {
+      font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--orange); margin: 1.75rem 0 1rem;
+      padding-bottom: 0.5rem; border-bottom: 1px solid rgba(232,115,58,0.15);
+    }
+
+    /* ANIMAL PICKER */
+    .animal-picker { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 1.25rem; }
+    .animal-btn {
+      padding: 0.5rem 1rem; border-radius: 50px;
+      border: 1.5px solid rgba(61,43,31,0.12);
+      font-size: 0.85rem; font-weight: 500; cursor: pointer;
+      background: white; color: var(--brown-mid);
+      transition: all 0.15s; font-family: 'DM Sans', sans-serif;
+    }
+    .animal-btn:hover, .animal-btn.selected {
+      background: var(--green-light); color: var(--green);
+      border-color: var(--green);
+    }
+
+    /* PHOTO UPLOAD */
+    .upload-zone {
+      border: 2px dashed rgba(61,43,31,0.18); border-radius: 16px;
+      padding: 2.5rem; text-align: center; cursor: pointer;
+      transition: all 0.2s; background: var(--cream);
+      margin-bottom: 1.25rem;
+    }
+    .upload-zone:hover { border-color: var(--orange); background: rgba(232,115,58,0.04); }
+    .upload-zone.dragover { border-color: var(--orange); background: rgba(232,115,58,0.08); }
+    .upload-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+    .upload-zone p { font-size: 0.88rem; color: var(--muted); }
+    .upload-zone strong { color: var(--orange); }
+    .photo-previews { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+    .photo-preview {
+      width: 80px; height: 80px; border-radius: 12px;
+      background: var(--warm); display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; position: relative; overflow: hidden;
+    }
+    .photo-remove {
+      position: absolute; top: 4px; right: 4px; width: 20px; height: 20px;
+      background: rgba(0,0,0,0.5); border-radius: 50%; border: none;
+      color: white; font-size: 0.7rem; cursor: pointer; display: flex;
+      align-items: center; justify-content: center;
+    }
+
+    /* LOCATION */
+    .location-row { display: flex; gap: 0.75rem; align-items: flex-end; }
+    .location-row .form-group { flex: 1; margin-bottom: 0; }
+    .btn-locate {
+      padding: 0.8rem 1rem; border-radius: 12px; white-space: nowrap;
+      background: var(--green-light); color: var(--green); border: none;
+      font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 600;
+      cursor: pointer; transition: background 0.2s; margin-bottom: 0;
+    }
+    .btn-locate:hover { background: var(--green); color: white; }
+
+    /* FORM ROW */
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+    /* SIDEBAR */
+    .post-sidebar { display: flex; flex-direction: column; gap: 1.5rem; }
+
+    .tip-card {
+      background: white; border-radius: 20px;
+      padding: 1.5rem; box-shadow: var(--card-shadow);
+    }
+    .tip-card h3 {
+      font-family: 'Fraunces', serif; font-size: 1rem;
+      font-weight: 700; color: var(--brown); margin-bottom: 1rem;
+    }
+    .tip-item {
+      display: flex; gap: 0.75rem; margin-bottom: 0.75rem;
+      align-items: flex-start;
+    }
+    .tip-item:last-child { margin-bottom: 0; }
+    .tip-icon {
+      width: 32px; height: 32px; border-radius: 10px;
+      background: rgba(232,115,58,0.1);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.9rem; flex-shrink: 0;
+    }
+    .tip-item p { font-size: 0.82rem; color: var(--brown-mid); line-height: 1.5; margin: 0; }
+    .tip-item strong { color: var(--brown); display: block; font-size: 0.85rem; margin-bottom: 0.2rem; }
+
+    /* PREVIEW CARD */
+    .preview-card {
+      background: white; border-radius: 20px;
+      overflow: hidden; box-shadow: var(--card-shadow);
+    }
+    .preview-header {
+      padding: 1rem 1.25rem; border-bottom: 1px solid rgba(61,43,31,0.06);
+    }
+    .preview-header h3 {
+      font-family: 'Fraunces', serif; font-size: 0.95rem;
+      font-weight: 700; color: var(--brown);
+    }
+    .preview-header p { font-size: 0.75rem; color: var(--muted); }
+    .preview-img {
+      height: 130px; background: linear-gradient(135deg,#FEF3EC,#FDDEC8);
+      display: flex; align-items: center; justify-content: center; font-size: 3rem;
+    }
+    .preview-body { padding: 1rem 1.25rem; }
+    .preview-title {
+      font-family: 'Fraunces', serif; font-size: 0.9rem;
+      font-weight: 700; color: var(--brown); margin-bottom: 0.3rem;
+    }
+    .preview-meta { font-size: 0.75rem; color: var(--muted); }
+
+    /* SUCCESS STATE */
+    .success-state {
+      display: none; text-align: center; padding: 3rem 2rem;
+    }
+    .success-icon { font-size: 4rem; margin-bottom: 1rem; }
+    .success-state h2 {
+      font-family: 'Fraunces', serif; font-size: 1.8rem;
+      font-weight: 900; color: var(--green); margin-bottom: 0.5rem;
+    }
+    .success-state p { color: var(--brown-mid); margin-bottom: 2rem; }
+
+    @media (max-width: 960px) {
+      .post-layout { grid-template-columns: 1fr; }
+      .post-sidebar { order: -1; flex-direction: row; flex-wrap: wrap; }
+      .tip-card, .preview-card { flex: 1; min-width: 280px; }
+    }
+    @media (max-width: 600px) {
+      .post-layout { padding: 0 1.5rem 4rem; }
+      .form-row { grid-template-columns: 1fr; }
+      .location-row { flex-direction: column; }
+      .post-sidebar { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">🐾 No<span>Hungry</span>Pets</a>
+  <div class="nav-links">
+    <a href="listings.html">Browse listings</a>
+    <a href="map.html">Map view</a>
+    <a href="post.html" class="active">Post a listing</a>
+    <a href="profile.html">My account</a>
+    <a href="post.html" class="btn-nav">+ Post free</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="page-header-inner">
+    <div class="page-tag">✦ Share with your community</div>
+    <h1>Post a <em>free</em> listing</h1>
+    <p>Got leftover pet food or supplies? Share it with an animal in need nearby — it takes less than 2 minutes.</p>
+  </div>
+</div>
+
+<div class="post-layout">
+
+  <!-- FORM -->
+  <div class="form-card" id="form-container">
+    <h2>Tell us what you're sharing</h2>
+    <p>All fields marked * are required. Your listing will go live instantly.</p>
+
+    <div class="form-section-title">🐾 Which animal is this for?</div>
+    <div class="animal-picker" id="animal-picker">
+      <button class="animal-btn" onclick="selectAnimal(this)">🐕 Dog</button>
+      <button class="animal-btn" onclick="selectAnimal(this)">🐈 Cat</button>
+      <button class="animal-btn" onclick="selectAnimal(this)">🐇 Rabbit</button>
+      <button class="animal-btn" onclick="selectAnimal(this)">🐹 Small pets</button>
+      <button class="animal-btn" onclick="selectAnimal(this)">🐦 Bird</button>
+      <button class="animal-btn" onclick="selectAnimal(this)">🦎 Reptile</button>
+      <button class="animal-btn" onclick="selectAnimal(this)">🐟 Fish</button>
+      <button class="animal-btn" onclick="selectAnimal(this)">🐴 Horse</button>
+      <button class="animal-btn" onclick="selectAnimal(this)">🐄 Farm animal</button>
+    </div>
+
+    <div class="form-section-title">📦 About the item</div>
+    <div class="form-group">
+      <label>Item name *</label>
+      <input type="text" id="item-name" placeholder="e.g. Royal Canin Medium Adult 4kg" oninput="updatePreview()"/>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Category *</label>
+        <select>
+          <option value="">Select type...</option>
+          <option>🥫 Wet food</option>
+          <option>🌾 Dry food / kibble</option>
+          <option>🦴 Treats & chews</option>
+          <option>💊 Supplements / medicine</option>
+          <option>🧸 Toys</option>
+          <option>🛏️ Bedding / litter</option>
+          <option>🏠 Equipment / accessories</option>
+          <option>📦 Mixed / other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Condition</label>
+        <select>
+          <option>Unopened / sealed</option>
+          <option>Open but fresh</option>
+          <option>Part used — good condition</option>
+          <option>Equipment — good condition</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea placeholder="e.g. Half a bag of Royal Canin left — my dog switched food. Best before Jan 2027. Can leave on doorstep."></textarea>
+    </div>
+
+    <div class="form-section-title">📸 Add photos (optional but recommended)</div>
+    <div class="upload-zone" id="upload-zone"
+      ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)"
+      onclick="document.getElementById('file-input').click()">
+      <div class="upload-icon">📷</div>
+      <p><strong>Click to upload</strong> or drag and drop</p>
+      <p style="font-size:0.78rem;margin-top:0.3rem">PNG, JPG up to 5MB each · Up to 4 photos</p>
+    </div>
+    <input type="file" id="file-input" accept="image/*" multiple style="display:none" onchange="handleFiles(this.files)">
+    <div class="photo-previews" id="photo-previews"></div>
+
+    <div class="form-section-title">📍 Your location</div>
+    <div class="location-row">
+      <div class="form-group">
+        <label>Postcode *</label>
+        <input type="text" placeholder="e.g. DE14 1AA" id="postcode"/>
+      </div>
+      <button class="btn-locate" onclick="locateMe()">📍 Use my location</button>
+    </div>
+    <div class="form-group">
+      <label>Pickup instructions</label>
+      <input type="text" placeholder="e.g. Leave a message first · Doorstep collection · Contact me to arrange"/>
+    </div>
+
+    <div class="form-section-title">👤 Your details</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Your first name *</label>
+        <input type="text" placeholder="e.g. Sarah"/>
+      </div>
+      <div class="form-group">
+        <label>Contact email *</label>
+        <input type="email" placeholder="you@example.com"/>
+      </div>
+    </div>
+
+    <div style="margin-top:0.5rem">
+      <label style="display:flex;align-items:flex-start;gap:0.6rem;cursor:pointer;font-size:0.82rem;color:var(--brown-mid)">
+        <input type="checkbox" style="width:auto;margin-top:2px"/> I agree to the
+        <a href="#" style="color:var(--orange);margin-left:0.2rem">community guidelines</a>
+        &nbsp;and confirm this item is safe for animals
+      </label>
+    </div>
+
+    <button class="btn-full" onclick="submitListing()" style="margin-top:1.5rem">
+      🐾 Post listing for free
+    </button>
+  </div>
+
+  <!-- SUCCESS STATE (hidden initially) -->
+  <div class="form-card success-state" id="success-state">
+    <div class="success-icon">🎉</div>
+    <h2>Listing posted!</h2>
+    <p>Your listing is now live. Pet owners nearby will be notified. Thank you for helping a pet eat today 🐾</p>
+    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
+      <a href="listings.html" class="btn-primary">View all listings</a>
+      <a href="post.html" class="btn-secondary" onclick="resetForm(event)">Post another</a>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <aside class="post-sidebar">
+
+    <!-- LIVE PREVIEW -->
+    <div class="preview-card">
+      <div class="preview-header">
+        <h3>👀 Live preview</h3>
+        <p>This is how your listing will look</p>
+      </div>
+      <div class="preview-img" id="preview-img">📦</div>
+      <div class="preview-body">
+        <div class="preview-title" id="preview-title">Your listing title will appear here...</div>
+        <div class="preview-meta">📍 Your area · Just now · Free</div>
+      </div>
+    </div>
+
+    <!-- TIPS -->
+    <div class="tip-card">
+      <h3>💡 Tips for a great listing</h3>
+      <div class="tip-item">
+        <div class="tip-icon">📸</div>
+        <p><strong>Add a photo</strong>Listings with photos get claimed 3x faster than those without.</p>
+      </div>
+      <div class="tip-item">
+        <div class="tip-icon">📅</div>
+        <p><strong>Include best-before date</strong>This helps recipients plan and builds trust.</p>
+      </div>
+      <div class="tip-item">
+        <div class="tip-icon">🏠</div>
+        <p><strong>Clear pickup instructions</strong>Say if it's doorstep collection or contact-first.</p>
+      </div>
+      <div class="tip-item">
+        <div class="tip-icon">🐾</div>
+        <p><strong>Be specific about animals</strong>Select all species that could use this item.</p>
+      </div>
+    </div>
+
+  </aside>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <a href="index.html" class="footer-logo">No<span>Hungry</span>Pets 🐾</a>
+    <div class="footer-links">
+      <a href="index.html">Home</a>
+      <a href="listings.html">Listings</a>
+      <a href="post.html">Post</a>
+      <a href="map.html">Map</a>
+    </div>
+    <div class="footer-copy">© 2026 NoHungryPets.com · Helping pets eat, one bowl at a time 🐾</div>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+<script>
+  const animalEmojis = {'🐕 Dog':'🦴','🐈 Cat':'🐟','🐇 Rabbit':'🥬','🐹 Small pets':'🌾','🐦 Bird':'🐦','🦎 Reptile':'🦎','🐟 Fish':'🐟','🐴 Horse':'🌿','🐄 Farm animal':'🌿'};
+
+  function selectAnimal(btn) {
+    btn.classList.toggle('selected');
+    const selected = [...document.querySelectorAll('.animal-btn.selected')];
+    const emoji = selected.length ? animalEmojis[selected[0].textContent] || '📦' : '📦';
+    document.getElementById('preview-img').textContent = emoji;
+  }
+
+  function updatePreview() {
+    const val = document.getElementById('item-name').value;
+    document.getElementById('preview-title').textContent = val || 'Your listing title will appear here...';
+  }
+
+  function locateMe() {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(() => {
+        document.getElementById('postcode').value = 'DE14 1AA';
+        showToast('📍 Location detected!', 'success');
+      });
+    }
+  }
+
+  let photos = [];
+  function handleFiles(files) {
+    [...files].slice(0, 4 - photos.length).forEach(f => {
+      const reader = new FileReader();
+      reader.onload = e => addPhotoPreview(e.target.result);
+      reader.readAsDataURL(f);
+    });
+  }
+  function addPhotoPreview(src) {
+    photos.push(src);
+    const prev = document.getElementById('photo-previews');
+    const div = document.createElement('div');
+    div.className = 'photo-preview';
+    div.innerHTML = `<img src="${src}" style="width:100%;height:100%;object-fit:cover;border-radius:12px"><button class="photo-remove" onclick="removePhoto(this)">✕</button>`;
+    prev.appendChild(div);
+    document.getElementById('preview-img').innerHTML = `<img src="${src}" style="width:100%;height:100%;object-fit:cover">`;
+  }
+  function removePhoto(btn) { btn.parentElement.remove(); }
+  function handleDragOver(e) { e.preventDefault(); document.getElementById('upload-zone').classList.add('dragover'); }
+  function handleDragLeave() { document.getElementById('upload-zone').classList.remove('dragover'); }
+  function handleDrop(e) { e.preventDefault(); handleFiles(e.dataTransfer.files); handleDragLeave(); }
+
+  function submitListing() {
+    const name = document.getElementById('item-name').value;
+    if (!name) { showToast('Please add a listing title!', 'error'); return; }
+    document.getElementById('form-container').style.display = 'none';
+    document.getElementById('success-state').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function resetForm(e) {
+    e.preventDefault();
+    document.getElementById('form-container').style.display = 'block';
+    document.getElementById('success-state').style.display = 'none';
+    document.getElementById('item-name').value = '';
+    document.getElementById('photo-previews').innerHTML = '';
+    document.querySelectorAll('.animal-btn').forEach(b => b.classList.remove('selected'));
+    updatePreview();
+  }
+</script>
+</body>
+</html>

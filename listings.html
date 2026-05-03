@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Browse Listings – NoHungryPets</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .listings-layout {
+      max-width: 1200px; margin: 0 auto;
+      padding: 0 2.5rem 5rem;
+      display: grid; grid-template-columns: 280px 1fr;
+      gap: 2rem; align-items: start;
+    }
+
+    /* FILTER SIDEBAR */
+    .filters {
+      background: white; border-radius: 20px;
+      padding: 1.5rem; box-shadow: var(--card-shadow);
+      position: sticky; top: 6rem;
+    }
+    .filters h3 {
+      font-family: 'Fraunces', serif; font-size: 1.1rem;
+      font-weight: 700; color: var(--brown); margin-bottom: 1.5rem;
+      padding-bottom: 0.75rem; border-bottom: 1px solid rgba(61,43,31,0.08);
+    }
+    .filter-section { margin-bottom: 1.5rem; }
+    .filter-section h4 {
+      font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--muted); margin-bottom: 0.75rem;
+    }
+    .filter-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .chip {
+      padding: 0.35rem 0.8rem; border-radius: 50px;
+      border: 1.5px solid rgba(61,43,31,0.12);
+      font-size: 0.78rem; font-weight: 500; cursor: pointer;
+      background: white; color: var(--brown-mid);
+      transition: all 0.15s; font-family: 'DM Sans', sans-serif;
+    }
+    .chip:hover, .chip.active {
+      background: var(--orange); color: white; border-color: var(--orange);
+    }
+    .chip.active-green { background: var(--green); color: white; border-color: var(--green); }
+    .filter-range { width: 100%; accent-color: var(--orange); margin-top: 0.5rem; }
+    .range-label {
+      display: flex; justify-content: space-between;
+      font-size: 0.78rem; color: var(--muted); margin-top: 0.3rem;
+    }
+    .filter-divider { border: none; border-top: 1px solid rgba(61,43,31,0.08); margin: 1.5rem 0; }
+
+    /* SEARCH BAR */
+    .search-bar {
+      display: flex; align-items: center; gap: 1rem;
+      margin-bottom: 1.5rem; flex-wrap: wrap;
+    }
+    .search-input-wrap {
+      flex: 1; position: relative; min-width: 200px;
+    }
+    .search-input-wrap input {
+      width: 100%; padding: 0.8rem 1rem 0.8rem 2.8rem;
+      border-radius: 50px; border: 1.5px solid rgba(61,43,31,0.12);
+      font-size: 0.92rem; font-family: 'DM Sans', sans-serif;
+      background: white; outline: none; transition: border-color 0.2s;
+    }
+    .search-input-wrap input:focus { border-color: var(--orange); }
+    .search-icon {
+      position: absolute; left: 1rem; top: 50%; transform: translateY(-50%);
+      font-size: 1rem; pointer-events: none;
+    }
+    .sort-select {
+      padding: 0.75rem 1rem; border-radius: 50px;
+      border: 1.5px solid rgba(61,43,31,0.12);
+      font-size: 0.88rem; font-family: 'DM Sans', sans-serif;
+      background: white; color: var(--brown); outline: none; cursor: pointer;
+    }
+
+    /* RESULTS META */
+    .results-meta {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+    .results-count { font-size: 0.88rem; color: var(--muted); font-weight: 500; }
+    .results-count strong { color: var(--brown); }
+    .view-toggle { display: flex; gap: 0.4rem; }
+    .view-btn {
+      width: 34px; height: 34px; border-radius: 10px; border: none;
+      background: white; cursor: pointer; font-size: 1rem;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .view-btn.active { background: var(--orange); color: white; }
+
+    /* LISTINGS GRID */
+    .listings-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem;
+    }
+    .listings-grid.list-view { grid-template-columns: 1fr; }
+
+    .listing-card {
+      background: white; border-radius: 18px;
+      overflow: hidden; box-shadow: var(--card-shadow);
+      transition: transform 0.2s, box-shadow 0.2s; cursor: pointer;
+      text-decoration: none; color: inherit; display: block;
+    }
+    .listing-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(61,43,31,0.14); }
+
+    .listing-card-img {
+      height: 150px; display: flex; align-items: center; justify-content: center;
+      font-size: 3.5rem; position: relative;
+    }
+    .bg-1 { background: linear-gradient(135deg,#FEF3EC,#FDDEC8); }
+    .bg-2 { background: linear-gradient(135deg,#EAF3EC,#C8E6CC); }
+    .bg-3 { background: linear-gradient(135deg,#FEF3EC,#FFE4D6); }
+    .bg-4 { background: linear-gradient(135deg,#EDF4FF,#C8DCFF); }
+    .bg-5 { background: linear-gradient(135deg,#FFF8EC,#FFE8B0); }
+    .bg-6 { background: linear-gradient(135deg,#F3ECFE,#DEC8FF); }
+
+    .listing-badge-wrap {
+      position: absolute; top: 10px; left: 10px; right: 10px;
+      display: flex; justify-content: space-between; align-items: flex-start;
+    }
+    .listing-card-body { padding: 1rem; }
+    .listing-card-body h4 {
+      font-family: 'Fraunces', serif; font-weight: 700;
+      font-size: 0.95rem; color: var(--brown); margin-bottom: 0.3rem;
+      line-height: 1.3;
+    }
+    .listing-meta { display: flex; gap: 1rem; font-size: 0.75rem; color: var(--muted); margin-bottom: 0.7rem; }
+    .listing-meta span { display: flex; align-items: center; gap: 0.25rem; }
+    .listing-animals { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+    .listing-card-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.7rem 1rem; border-top: 1px solid rgba(61,43,31,0.06);
+    }
+    .user-info { display: flex; align-items: center; gap: 0.4rem; }
+    .user-avatar {
+      width: 26px; height: 26px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700; color: white;
+    }
+    .av-1 { background: var(--orange); }
+    .av-2 { background: var(--green); }
+    .av-3 { background: var(--brown-mid); }
+    .av-4 { background: #6C5CE7; }
+    .av-5 { background: #E84393; }
+    .av-6 { background: #00B894; }
+    .user-name { font-size: 0.75rem; color: var(--brown-mid); font-weight: 500; }
+    .btn-claim {
+      background: var(--orange); color: white;
+      padding: 0.35rem 0.9rem; border-radius: 50px;
+      font-size: 0.75rem; font-weight: 700; border: none; cursor: pointer;
+      transition: background 0.2s, transform 0.15s; font-family: 'DM Sans', sans-serif;
+    }
+    .btn-claim:hover { background: var(--orange-deep); transform: scale(1.05); }
+    .btn-claimed {
+      background: var(--warm); color: var(--muted);
+      padding: 0.35rem 0.9rem; border-radius: 50px;
+      font-size: 0.75rem; font-weight: 700; border: none;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    /* LIST VIEW CARD */
+    .listings-grid.list-view .listing-card { display: flex; }
+    .listings-grid.list-view .listing-card-img { width: 120px; height: auto; flex-shrink: 0; font-size: 2.5rem; }
+    .listings-grid.list-view .listing-card-content { flex: 1; display: flex; flex-direction: column; }
+    .listings-grid.list-view .listing-card-body { flex: 1; }
+    .listings-grid.list-view .listing-card-footer { border-top: none; border-left: 1px solid rgba(61,43,31,0.06); }
+
+    /* PAGINATION */
+    .pagination {
+      display: flex; justify-content: center; gap: 0.5rem; margin-top: 3rem;
+    }
+    .page-btn {
+      width: 38px; height: 38px; border-radius: 10px; border: none;
+      background: white; cursor: pointer; font-size: 0.88rem; font-weight: 600;
+      color: var(--brown-mid); transition: all 0.15s;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08); font-family: 'DM Sans', sans-serif;
+    }
+    .page-btn:hover, .page-btn.active { background: var(--orange); color: white; }
+
+    /* EMPTY STATE */
+    .empty-state {
+      text-align: center; padding: 4rem 2rem; grid-column: 1/-1;
+    }
+    .empty-state .emoji { font-size: 4rem; margin-bottom: 1rem; }
+    .empty-state h3 {
+      font-family: 'Fraunces', serif; font-size: 1.4rem;
+      color: var(--brown); margin-bottom: 0.5rem;
+    }
+    .empty-state p { color: var(--muted); font-size: 0.9rem; }
+
+    @media (max-width: 960px) {
+      .listings-layout { grid-template-columns: 1fr; }
+      .filters { position: static; }
+      .listings-grid { grid-template-columns: repeat(2,1fr); }
+    }
+    @media (max-width: 600px) {
+      .listings-layout { padding: 0 1.5rem 4rem; }
+      .listings-grid { grid-template-columns: 1fr; }
+      .listings-grid.list-view .listing-card { flex-direction: column; }
+      .listings-grid.list-view .listing-card-img { width: 100%; height: 120px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">🐾 No<span>Hungry</span>Pets</a>
+  <div class="nav-links">
+    <a href="listings.html" class="active">Browse listings</a>
+    <a href="map.html">Map view</a>
+    <a href="post.html">Post a listing</a>
+    <a href="profile.html">My account</a>
+    <a href="post.html" class="btn-nav">+ Post free</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="page-header-inner">
+    <div class="page-tag">✦ Browse listings</div>
+    <h1>What's available <em>near you</em></h1>
+    <p>Pet food and supplies shared by your neighbours — free to claim, no questions asked.</p>
+  </div>
+</div>
+
+<div class="listings-layout">
+
+  <!-- SIDEBAR FILTERS -->
+  <aside class="filters">
+    <h3>🔍 Filter listings</h3>
+
+    <div class="filter-section">
+      <h4>Animal type</h4>
+      <div class="filter-chips">
+        <button class="chip active" onclick="toggleChip(this)">All</button>
+        <button class="chip" onclick="toggleChip(this)">🐕 Dog</button>
+        <button class="chip" onclick="toggleChip(this)">🐈 Cat</button>
+        <button class="chip" onclick="toggleChip(this)">🐇 Rabbit</button>
+        <button class="chip" onclick="toggleChip(this)">🐹 Small pets</button>
+        <button class="chip" onclick="toggleChip(this)">🐦 Bird</button>
+        <button class="chip" onclick="toggleChip(this)">🦎 Reptile</button>
+        <button class="chip" onclick="toggleChip(this)">🐟 Fish</button>
+        <button class="chip" onclick="toggleChip(this)">🐴 Horse</button>
+      </div>
+    </div>
+
+    <hr class="filter-divider">
+
+    <div class="filter-section">
+      <h4>Item type</h4>
+      <div class="filter-chips">
+        <button class="chip active" onclick="toggleChip(this)">All</button>
+        <button class="chip" onclick="toggleChip(this)">🥫 Wet food</button>
+        <button class="chip" onclick="toggleChip(this)">🌾 Dry food</button>
+        <button class="chip" onclick="toggleChip(this)">🦴 Treats</button>
+        <button class="chip" onclick="toggleChip(this)">💊 Supplements</button>
+        <button class="chip" onclick="toggleChip(this)">🧸 Toys</button>
+        <button class="chip" onclick="toggleChip(this)">🛏️ Bedding</button>
+        <button class="chip" onclick="toggleChip(this)">📦 Other supplies</button>
+      </div>
+    </div>
+
+    <hr class="filter-divider">
+
+    <div class="filter-section">
+      <h4>Distance</h4>
+      <input type="range" class="filter-range" min="0.5" max="10" step="0.5" value="5" oninput="updateRange(this)">
+      <div class="range-label">
+        <span>0.5 miles</span>
+        <span id="range-val">5 miles</span>
+      </div>
+    </div>
+
+    <hr class="filter-divider">
+
+    <div class="filter-section">
+      <h4>Availability</h4>
+      <div class="filter-chips">
+        <button class="chip active" onclick="toggleChip(this)">All</button>
+        <button class="chip active-green" onclick="toggleChip(this)">Available now</button>
+      </div>
+    </div>
+
+    <hr class="filter-divider">
+    <button class="btn-full" style="background:var(--warm);color:var(--brown);margin-top:0" onclick="showToast('Filters cleared!','success')">Clear all filters</button>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main>
+    <div class="search-bar">
+      <div class="search-input-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="Search listings e.g. Royal Canin, cat food..."/>
+      </div>
+      <select class="sort-select">
+        <option>Nearest first</option>
+        <option>Most recent</option>
+        <option>A–Z</option>
+      </select>
+    </div>
+
+    <div class="results-meta">
+      <div class="results-count">Showing <strong>12 listings</strong> within 5 miles</div>
+      <div class="view-toggle">
+        <button class="view-btn active" onclick="setView('grid',this)" title="Grid view">⊞</button>
+        <button class="view-btn" onclick="setView('list',this)" title="List view">≡</button>
+      </div>
+    </div>
+
+    <div class="listings-grid" id="listings-grid">
+
+      <a href="#" class="listing-card" onclick="claimListing(event,this)">
+        <div class="listing-card-img bg-1">
+          🦴
+          <div class="listing-badge-wrap">
+            <span class="badge-available">Available</span>
+          </div>
+        </div>
+        <div class="listing-card-content">
+          <div class="listing-card-body">
+            <h4>Royal Canin Medium Adult 4kg (unopened)</h4>
+            <div class="listing-meta">
+              <span>📍 0.3 miles</span>
+              <span>🕐 2 hrs ago</span>
+            </div>
+            <div class="listing-animals">
+              <span class="animal-tag">🐕 Dog</span>
+            </div>
+          </div>
+          <div class="listing-card-footer">
+            <div class="user-info">
+              <div class="user-avatar av-1">S</div>
+              <span class="user-name">Sarah M.</span>
+            </div>
+            <button class="btn-claim">Claim →</button>
+          </div>
+        </div>
+      </a>
+
+      <a href="#" class="listing-card" onclick="claimListing(event,this)">
+        <div class="listing-card-img bg-2">🐟
+          <div class="listing-badge-wrap"><span class="badge-available">Available</span></div>
+        </div>
+        <div class="listing-card-content">
+          <div class="listing-card-body">
+            <h4>Whiskas Tuna Pouches x24</h4>
+            <div class="listing-meta"><span>📍 0.8 miles</span><span>🕐 5 hrs ago</span></div>
+            <div class="listing-animals"><span class="animal-tag">🐈 Cat</span></div>
+          </div>
+          <div class="listing-card-footer">
+            <div class="user-info"><div class="user-avatar av-2">J</div><span class="user-name">James T.</span></div>
+            <button class="btn-claim">Claim →</button>
+          </div>
+        </div>
+      </a>
+
+      <a href="#" class="listing-card" onclick="claimListing(event,this)">
+        <div class="listing-card-img bg-3">🐇
+          <div class="listing-badge-wrap"><span class="badge-available">Available</span></div>
+        </div>
+        <div class="listing-card-content">
+          <div class="listing-card-body">
+            <h4>Supreme Science Rabbit Pellets 2kg</h4>
+            <div class="listing-meta"><span>📍 1.2 miles</span><span>🕐 Yesterday</span></div>
+            <div class="listing-animals"><span class="animal-tag">🐇 Rabbit</span><span class="animal-tag">🐹 Small pets</span></div>
+          </div>
+          <div class="listing-card-footer">
+            <div class="user-info"><div class="user-avatar av-3">L</div><span class="user-name">Lisa K.</span></div>
+            <button class="btn-claim">Claim →</button>
+          </div>
+        </div>
+      </a>
+
+      <a href="#" class="listing-card" onclick="claimListing(event,this)">
+        <div class="listing-card-img bg-4">🐦
+          <div class="listing-badge-wrap"><span class="badge-available">Available</span></div>
+        </div>
+        <div class="listing-card-content">
+          <div class="listing-card-body">
+            <h4>Versele-Laga Parrot Mix 3kg</h4>
+            <div class="listing-meta"><span>📍 1.5 miles</span><span>🕐 2 days ago</span></div>
+            <div class="listing-animals"><span class="animal-tag">🐦 Bird</span></div>
+          </div>
+          <div class="listing-card-footer">
+            <div class="user-info"><div class="user-avatar av-4">R</div><span class="user-name">Rachel P.</span></div>
+            <button class="btn-claim">Claim →</button>
+          </div>
+        </div>
+      </a>
+
+      <a href="#" class="listing-card">
+        <div class="listing-card-img bg-5">🐕
+          <div class="listing-badge-wrap"><span class="badge-gone">Claimed</span></div>
+        </div>
+        <div class="listing-card-content">
+          <div class="listing-card-body">
+            <h4>Pedigree Puppy Dry Food 3kg</h4>
+            <div class="listing-meta"><span>📍 1.8 miles</span><span>🕐 3 days ago</span></div>
+            <div class="listing-animals"><span class="animal-tag">🐕 Dog</span></div>
+          </div>
+          <div class="listing-card-footer">
+            <div class="user-info"><div class="user-avatar av-5">M</div><span class="user-name">Mike B.</span></div>
+            <button class="btn-claimed" disabled>Claimed</button>
+          </div>
+        </div>
+      </a>
+
+      <a href="#" class="listing-card" onclick="claimListing(event,this)">
+        <div class="listing-card-img bg-6">🦎
+          <div class="listing-badge-wrap"><span class="badge-available">Available</span></div>
+        </div>
+        <div class="listing-card-content">
+          <div class="listing-card-body">
+            <h4>Zoo Med Repti Basking Bulb + Crickets</h4>
+            <div class="listing-meta"><span>📍 2.1 miles</span><span>🕐 4 days ago</span></div>
+            <div class="listing-animals"><span class="animal-tag">🦎 Reptile</span></div>
+          </div>
+          <div class="listing-card-footer">
+            <div class="user-info"><div class="user-avatar av-6">A</div><span class="user-name">Anya W.</span></div>
+            <button class="btn-claim">Claim →</button>
+          </div>
+        </div>
+      </a>
+
+    </div>
+
+    <div class="pagination">
+      <button class="page-btn active">1</button>
+      <button class="page-btn">2</button>
+      <button class="page-btn">3</button>
+      <button class="page-btn">→</button>
+    </div>
+  </main>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <a href="index.html" class="footer-logo">No<span>Hungry</span>Pets 🐾</a>
+    <div class="footer-links">
+      <a href="index.html">Home</a>
+      <a href="listings.html">Listings</a>
+      <a href="post.html">Post</a>
+      <a href="map.html">Map</a>
+    </div>
+    <div class="footer-copy">© 2026 NoHungryPets.com · Helping pets eat, one bowl at a time 🐾</div>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+<script>
+  function toggleChip(el) {
+    el.classList.toggle('active');
+    showToast('Filter updated!', 'success');
+  }
+  function updateRange(el) {
+    document.getElementById('range-val').textContent = el.value + ' miles';
+  }
+  function setView(type, btn) {
+    document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const grid = document.getElementById('listings-grid');
+    grid.classList.toggle('list-view', type === 'list');
+  }
+  function claimListing(e, card) {
+    e.preventDefault();
+    const btn = card.querySelector('.btn-claim');
+    if (!btn) return;
+    btn.textContent = '✓ Claimed!';
+    btn.className = 'btn-claimed';
+    btn.disabled = true;
+    card.querySelector('.badge-available').textContent = 'Claimed';
+    card.querySelector('.badge-available').className = 'badge-gone';
+    showToast('🐾 Listing claimed! The owner will be in touch.', 'success');
+  }
+</script>
+</body>
+</html>
