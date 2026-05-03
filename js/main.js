@@ -1,30 +1,24 @@
-(() => {
-  function ensureToastWrap() {
-    let wrap = document.querySelector('.toast-wrap');
-    if (!wrap) {
-      wrap = document.createElement('div');
-      wrap.className = 'toast-wrap';
-      document.body.appendChild(wrap);
-    }
-    return wrap;
-  }
+// NoHungryPets - Shared JS
 
-  window.showToast = function showToast(message, type = 'success') {
-    try {
-      const wrap = ensureToastWrap();
-      const el = document.createElement('div');
-      el.className = `toast ${type || ''}`.trim();
-      el.textContent = message || '';
-      wrap.appendChild(el);
-      setTimeout(() => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(4px)';
-        el.style.transition = 'opacity 220ms ease, transform 220ms ease';
-      }, 2200);
-      setTimeout(() => el.remove(), 2600);
-    } catch (e) {
-      /* no-op */
-    }
-  };
-})();
+// Highlight active nav link
+document.addEventListener('DOMContentLoaded', () => {
+  const page = window.location.pathname.split('/').pop() || 'index.html';
+  document.querySelectorAll('.nav-links a').forEach(a => {
+    if (a.getAttribute('href') === page) a.classList.add('active');
+  });
+});
 
+// Simple toast notification
+function showToast(msg, type = 'success') {
+  const t = document.createElement('div');
+  t.style.cssText = `
+    position:fixed; bottom:2rem; left:50%; transform:translateX(-50%);
+    background:${type === 'success' ? '#3A7D5A' : '#E8733A'}; color:white;
+    padding:0.9rem 2rem; border-radius:50px; font-weight:600; font-size:0.9rem;
+    box-shadow:0 8px 32px rgba(0,0,0,0.2); z-index:9999;
+    animation: fadeUp 0.3s ease both;
+  `;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}

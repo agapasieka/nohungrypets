@@ -8,30 +8,188 @@
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <style>
-    .wrap { max-width: 1100px; margin: 0 auto; padding: 0 2.5rem 5rem; }
-    .grid { display: grid; grid-template-columns: 1fr 360px; gap: 1.5rem; align-items: start; }
-    .card { background: white; border-radius: 24px; padding: 2rem; box-shadow: var(--card-shadow); }
-    .card h2 {
-      margin: 0 0 0.5rem;
-      font-family: 'Fraunces', serif;
-      color: var(--brown);
-      font-weight: 900;
-      font-size: 1.6rem;
+    .profile-layout {
+      max-width: 1100px; margin: 0 auto;
+      padding: 0 2.5rem 5rem;
+      display: grid; grid-template-columns: 300px 1fr;
+      gap: 2rem; align-items: start;
     }
-    .card p { margin: 0 0 1.25rem; color: var(--brown-mid); font-weight: 500; line-height: 1.6; }
-    .pill {
-      display: inline-flex; align-items: center; gap: 0.5rem;
-      padding: 0.35rem 0.9rem; border-radius: 999px;
-      background: rgba(58,125,90,0.10); color: var(--green);
-      font-weight: 900; font-size: 0.8rem;
+
+    /* SIDEBAR */
+    .profile-sidebar { display: flex; flex-direction: column; gap: 1.25rem; }
+
+    .profile-card {
+      background: white; border-radius: 20px;
+      padding: 2rem; box-shadow: var(--card-shadow);
+      text-align: center;
     }
-    .mini { color: var(--muted); font-weight: 700; font-size: 0.9rem; margin: 0.4rem 0 0; }
-    .cta-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.25rem; }
-    .side-list { display: grid; gap: 0.75rem; margin: 0; padding: 0; list-style: none; }
-    .side-list li { padding: 0.9rem 1rem; border-radius: 16px; background: rgba(61,43,31,0.05); font-weight: 800; color: var(--brown); }
+    .profile-avatar {
+      width: 80px; height: 80px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--orange), var(--orange-deep));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; font-weight: 900; color: white;
+      font-family: 'Fraunces', serif; margin: 0 auto 1rem;
+      position: relative;
+    }
+    .avatar-verified {
+      position: absolute; bottom: 0; right: 0;
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--green); border: 2px solid white;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem;
+    }
+    .profile-name {
+      font-family: 'Fraunces', serif; font-size: 1.3rem;
+      font-weight: 900; color: var(--brown); margin-bottom: 0.2rem;
+    }
+    .profile-email { font-size: 0.82rem; color: var(--muted); margin-bottom: 0.5rem; }
+    .profile-location { font-size: 0.82rem; color: var(--brown-mid); }
+    .profile-joined { font-size: 0.75rem; color: var(--muted); margin-top: 0.5rem; }
+
+    .profile-stats {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 0.75rem; margin-top: 1.25rem; padding-top: 1.25rem;
+      border-top: 1px solid rgba(61,43,31,0.08);
+    }
+    .profile-stat {
+      text-align: center; padding: 0.75rem;
+      background: var(--cream); border-radius: 12px;
+    }
+    .profile-stat-num {
+      font-family: 'Fraunces', serif; font-size: 1.6rem;
+      font-weight: 900; color: var(--orange);
+    }
+    .profile-stat-label { font-size: 0.72rem; color: var(--muted); }
+
+    /* NAV MENU */
+    .profile-menu {
+      background: white; border-radius: 20px;
+      padding: 0.75rem; box-shadow: var(--card-shadow);
+    }
+    .menu-item {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.75rem 1rem; border-radius: 12px;
+      cursor: pointer; transition: background 0.15s;
+      font-size: 0.9rem; font-weight: 500; color: var(--brown-mid);
+      text-decoration: none;
+    }
+    .menu-item:hover, .menu-item.active {
+      background: var(--cream); color: var(--orange);
+    }
+    .menu-item .icon { font-size: 1.1rem; width: 24px; text-align: center; }
+    .menu-item .badge {
+      margin-left: auto; background: var(--orange); color: white;
+      padding: 0.1rem 0.5rem; border-radius: 50px; font-size: 0.7rem; font-weight: 700;
+    }
+    .menu-divider { height: 1px; background: rgba(61,43,31,0.06); margin: 0.5rem 0; }
+    .menu-item.logout { color: var(--muted); }
+    .menu-item.logout:hover { background: rgba(232,115,58,0.08); color: var(--orange); }
+
+    /* MAIN CONTENT */
+    .profile-main { display: flex; flex-direction: column; gap: 1.5rem; }
+
+    /* SECTION CARD */
+    .section-card {
+      background: white; border-radius: 20px;
+      padding: 1.75rem; box-shadow: var(--card-shadow);
+    }
+    .section-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1.5rem; padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(61,43,31,0.06);
+    }
+    .section-card-header h3 {
+      font-family: 'Fraunces', serif; font-size: 1.1rem;
+      font-weight: 700; color: var(--brown);
+    }
+
+    /* MY LISTINGS */
+    .my-listings { display: flex; flex-direction: column; gap: 0.75rem; }
+    .my-listing-row {
+      display: flex; align-items: center; gap: 1rem;
+      padding: 1rem; background: var(--cream); border-radius: 14px;
+      transition: background 0.15s;
+    }
+    .my-listing-row:hover { background: var(--warm); }
+    .my-listing-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: linear-gradient(135deg,#FEF3EC,#FDDEC8);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; flex-shrink: 0;
+    }
+    .my-listing-info { flex: 1; }
+    .my-listing-name {
+      font-weight: 600; font-size: 0.9rem;
+      color: var(--brown); margin-bottom: 0.2rem;
+    }
+    .my-listing-meta { font-size: 0.75rem; color: var(--muted); }
+    .my-listing-actions { display: flex; gap: 0.5rem; }
+    .btn-sm {
+      padding: 0.35rem 0.8rem; border-radius: 8px; border: none;
+      font-size: 0.75rem; font-weight: 600; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+    }
+    .btn-sm-edit { background: var(--warm); color: var(--brown-mid); }
+    .btn-sm-edit:hover { background: var(--orange); color: white; }
+    .btn-sm-delete { background: rgba(232,115,58,0.1); color: var(--orange); }
+    .btn-sm-delete:hover { background: var(--orange); color: white; }
+
+    /* ACTIVITY FEED */
+    .activity-feed { display: flex; flex-direction: column; gap: 0.75rem; }
+    .activity-item {
+      display: flex; align-items: flex-start; gap: 0.75rem;
+      padding: 0.75rem; border-radius: 12px; background: var(--cream);
+    }
+    .activity-icon {
+      width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; flex-shrink: 0;
+    }
+    .act-green { background: var(--green-light); }
+    .act-orange { background: rgba(232,115,58,0.1); }
+    .activity-text { font-size: 0.85rem; color: var(--brown-mid); line-height: 1.5; }
+    .activity-text strong { color: var(--brown); }
+    .activity-time { font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem; }
+
+    /* EDIT PROFILE FORM */
+    .edit-form { display: none; }
+    .edit-form.visible { display: block; }
+    .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+    /* IMPACT CARD */
+    .impact-card {
+      background: linear-gradient(135deg, var(--brown), #5C3D2E);
+      border-radius: 20px; padding: 1.75rem;
+      box-shadow: var(--card-shadow); color: white;
+    }
+    .impact-card h3 {
+      font-family: 'Fraunces', serif; font-size: 1.1rem;
+      font-weight: 700; margin-bottom: 1.25rem;
+    }
+    .impact-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; }
+    .impact-item { text-align: center; }
+    .impact-num {
+      font-family: 'Fraunces', serif; font-size: 2rem;
+      font-weight: 900; color: var(--orange);
+    }
+    .impact-label { font-size: 0.72rem; color: rgba(255,255,255,0.5); margin-top: 0.2rem; }
+
+    /* LOADING SKELETON */
+    .skeleton {
+      background: linear-gradient(90deg, #f0e8dc 25%, #e8ddd0 50%, #f0e8dc 75%);
+      background-size: 200% 100%; animation: shimmer 1.5s infinite;
+      border-radius: 8px; height: 1rem;
+    }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
     @media (max-width: 900px) {
-      .grid { grid-template-columns: 1fr; }
-      .wrap { padding: 0 1.5rem 4rem; }
+      .profile-layout { grid-template-columns: 1fr; }
+      .impact-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 600px) {
+      .profile-layout { padding: 0 1.5rem 4rem; }
+      .form-row-2 { grid-template-columns: 1fr; }
+      .my-listing-actions { flex-direction: column; }
     }
   </style>
 </head>
@@ -51,50 +209,360 @@
 <div class="page-header">
   <div class="page-header-inner">
     <div class="page-tag">✦ My account</div>
-    <h1>Your profile, saved items &amp; messages — <em>soon</em></h1>
-    <p>This page is under development. Accounts and messaging will be added when we build the backend.</p>
+    <h1>Hello, <em id="header-name">there</em> 👋</h1>
+    <p>Manage your listings, track your impact and update your details.</p>
   </div>
 </div>
 
-<main class="wrap">
-  <div class="grid">
-    <section class="card">
-      <div class="pill">🚧 Under development</div>
-      <p class="mini">No login required yet</p>
-      <h2>What will live here</h2>
-      <p>Once the backend is ready, you’ll be able to create an account, manage your listings, and message people nearby.</p>
-      <div class="cta-row">
-        <a class="btn-primary" href="post.html">Post a listing</a>
-        <a class="btn-secondary" href="listings.html">Browse listings</a>
-      </div>
-    </section>
+<div class="profile-layout">
 
-    <aside class="card">
-      <h2>Planned features</h2>
-      <ul class="side-list">
-        <li>✅ Save listings</li>
-        <li>✅ Manage your posts</li>
-        <li>✅ Messages</li>
-        <li>✅ Safety &amp; moderation</li>
-      </ul>
-    </aside>
-  </div>
-</main>
+  <!-- SIDEBAR -->
+  <aside class="profile-sidebar">
+
+    <div class="profile-card">
+      <div class="profile-avatar" id="avatar-circle">
+        ?
+        <div class="avatar-verified">✓</div>
+      </div>
+      <div class="profile-name" id="profile-name">Loading...</div>
+      <div class="profile-email" id="profile-email">...</div>
+      <div class="profile-location" id="profile-location">📍 ...</div>
+      <div class="profile-joined" id="profile-joined">Member since ...</div>
+      <div class="profile-stats">
+        <div class="profile-stat">
+          <div class="profile-stat-num" id="stat-listings">0</div>
+          <div class="profile-stat-label">Listings posted</div>
+        </div>
+        <div class="profile-stat">
+          <div class="profile-stat-num" id="stat-claims">0</div>
+          <div class="profile-stat-label">Items claimed</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="profile-menu">
+      <a href="#" class="menu-item active" onclick="showSection('listings', this)">
+        <span class="icon">📦</span> My listings
+        <span class="badge">3</span>
+      </a>
+      <a href="#" class="menu-item" onclick="showSection('activity', this)">
+        <span class="icon">🔔</span> Activity
+      </a>
+      <a href="#" class="menu-item" onclick="showSection('impact', this)">
+        <span class="icon">🌿</span> My impact
+      </a>
+      <a href="#" class="menu-item" onclick="showSection('settings', this)">
+        <span class="icon">⚙️</span> Settings
+      </a>
+      <div class="menu-divider"></div>
+      <a href="post.html" class="menu-item">
+        <span class="icon">➕</span> Post a listing
+      </a>
+      <a href="listings.html" class="menu-item">
+        <span class="icon">🔍</span> Browse listings
+      </a>
+      <div class="menu-divider"></div>
+      <a href="#" class="menu-item logout" onclick="handleLogout()">
+        <span class="icon">🚪</span> Log out
+      </a>
+    </div>
+
+  </aside>
+
+  <!-- MAIN -->
+  <main class="profile-main">
+
+    <!-- MY LISTINGS SECTION -->
+    <div class="section-card" id="section-listings">
+      <div class="section-card-header">
+        <h3>📦 My listings</h3>
+        <a href="post.html" class="btn-ghost">+ Post new</a>
+      </div>
+      <div class="my-listings">
+        <div class="my-listing-row">
+          <div class="my-listing-icon">🦴</div>
+          <div class="my-listing-info">
+            <div class="my-listing-name">Royal Canin Medium Adult 4kg</div>
+            <div class="my-listing-meta">🐕 Dog · Posted 2 hours ago · <span style="color:var(--green);font-weight:600">Available</span></div>
+          </div>
+          <div class="my-listing-actions">
+            <button class="btn-sm btn-sm-edit">Edit</button>
+            <button class="btn-sm btn-sm-delete" onclick="deleteListing(this)">Delete</button>
+          </div>
+        </div>
+        <div class="my-listing-row">
+          <div class="my-listing-icon">🐟</div>
+          <div class="my-listing-info">
+            <div class="my-listing-name">Whiskas Tuna Pouches x12</div>
+            <div class="my-listing-meta">🐈 Cat · Posted yesterday · <span style="color:var(--muted);font-weight:600">Claimed</span></div>
+          </div>
+          <div class="my-listing-actions">
+            <button class="btn-sm btn-sm-edit">Edit</button>
+            <button class="btn-sm btn-sm-delete" onclick="deleteListing(this)">Delete</button>
+          </div>
+        </div>
+        <div class="my-listing-row">
+          <div class="my-listing-icon">🌾</div>
+          <div class="my-listing-info">
+            <div class="my-listing-name">Supreme Rabbit Pellets 2kg</div>
+            <div class="my-listing-meta">🐇 Rabbit · Posted 3 days ago · <span style="color:var(--green);font-weight:600">Available</span></div>
+          </div>
+          <div class="my-listing-actions">
+            <button class="btn-sm btn-sm-edit">Edit</button>
+            <button class="btn-sm btn-sm-delete" onclick="deleteListing(this)">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACTIVITY SECTION -->
+    <div class="section-card" id="section-activity" style="display:none">
+      <div class="section-card-header">
+        <h3>🔔 Recent activity</h3>
+      </div>
+      <div class="activity-feed">
+        <div class="activity-item">
+          <div class="activity-icon act-green">✅</div>
+          <div>
+            <div class="activity-text"><strong>James T.</strong> claimed your Whiskas Tuna Pouches listing</div>
+            <div class="activity-time">2 hours ago</div>
+          </div>
+        </div>
+        <div class="activity-item">
+          <div class="activity-icon act-orange">📦</div>
+          <div>
+            <div class="activity-text">You posted <strong>Royal Canin Medium Adult 4kg</strong></div>
+            <div class="activity-time">3 hours ago</div>
+          </div>
+        </div>
+        <div class="activity-item">
+          <div class="activity-icon act-green">🎉</div>
+          <div>
+            <div class="activity-text">Welcome to <strong>NoHungryPets</strong>! Your account is ready.</div>
+            <div class="activity-time">Today</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IMPACT SECTION -->
+    <div id="section-impact" style="display:none">
+      <div class="impact-card">
+        <h3>🌿 Your impact so far</h3>
+        <div class="impact-grid">
+          <div class="impact-item">
+            <div class="impact-num" id="impact-listings">3</div>
+            <div class="impact-label">Listings posted</div>
+          </div>
+          <div class="impact-item">
+            <div class="impact-num" id="impact-claimed">1</div>
+            <div class="impact-label">Items rehomed</div>
+          </div>
+          <div class="impact-item">
+            <div class="impact-num">~£12</div>
+            <div class="impact-label">Food value shared</div>
+          </div>
+        </div>
+      </div>
+      <div class="section-card" style="margin-top:1.5rem">
+        <div class="section-card-header">
+          <h3>🏅 Badges earned</h3>
+        </div>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap">
+          <div style="text-align:center;padding:1rem;background:var(--cream);border-radius:14px;min-width:100px">
+            <div style="font-size:2rem">🌱</div>
+            <div style="font-size:0.75rem;font-weight:600;color:var(--brown);margin-top:0.3rem">First listing</div>
+          </div>
+          <div style="text-align:center;padding:1rem;background:var(--cream);border-radius:14px;min-width:100px">
+            <div style="font-size:2rem">🤝</div>
+            <div style="font-size:0.75rem;font-weight:600;color:var(--brown);margin-top:0.3rem">First share</div>
+          </div>
+          <div style="text-align:center;padding:1rem;background:rgba(61,43,31,0.04);border-radius:14px;min-width:100px;opacity:0.4">
+            <div style="font-size:2rem">⭐</div>
+            <div style="font-size:0.75rem;font-weight:600;color:var(--muted);margin-top:0.3rem">5 listings</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS SECTION -->
+    <div class="section-card" id="section-settings" style="display:none">
+      <div class="section-card-header">
+        <h3>⚙️ Account settings</h3>
+        <button class="btn-ghost" onclick="toggleEditForm()">Edit profile</button>
+      </div>
+
+      <!-- VIEW MODE -->
+      <div id="settings-view">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div>
+            <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:0.3rem">Name</div>
+            <div style="font-size:0.95rem;color:var(--brown);font-weight:500" id="settings-name-view">—</div>
+          </div>
+          <div>
+            <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:0.3rem">Email</div>
+            <div style="font-size:0.95rem;color:var(--brown);font-weight:500" id="settings-email-view">—</div>
+          </div>
+          <div>
+            <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:0.3rem">Postcode</div>
+            <div style="font-size:0.95rem;color:var(--brown);font-weight:500" id="settings-postcode-view">—</div>
+          </div>
+          <div>
+            <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:0.3rem">Member since</div>
+            <div style="font-size:0.95rem;color:var(--brown);font-weight:500" id="settings-joined-view">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EDIT FORM -->
+      <div class="edit-form" id="edit-form">
+        <div class="form-row-2">
+          <div class="form-group">
+            <label>First name</label>
+            <input type="text" id="edit-name" placeholder="Your name"/>
+          </div>
+          <div class="form-group">
+            <label>Postcode</label>
+            <input type="text" id="edit-postcode" placeholder="e.g. DE14 1AA"/>
+          </div>
+        </div>
+        <div style="display:flex;gap:0.75rem;margin-top:0.5rem">
+          <button class="btn-primary" onclick="saveProfile()" style="padding:0.7rem 1.5rem;font-size:0.9rem">Save changes</button>
+          <button class="btn-secondary" onclick="toggleEditForm()" style="padding:0.7rem 1.5rem;font-size:0.9rem">Cancel</button>
+        </div>
+      </div>
+
+      <hr style="border:none;border-top:1px solid rgba(61,43,31,0.08);margin:1.5rem 0">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:600;color:var(--brown);font-size:0.9rem">Delete account</div>
+          <div style="font-size:0.78rem;color:var(--muted)">Permanently delete your account and all listings</div>
+        </div>
+        <button class="btn-sm btn-sm-delete" onclick="showToast('Please contact us to delete your account.', 'error')">Delete</button>
+      </div>
+    </div>
+
+  </main>
+</div>
 
 <footer>
   <div class="footer-inner">
-    <a href="index.html" class="footer-logo">🐾 No<span>Hungry</span>Pets</a>
+    <a href="index.html" class="footer-logo">No<span>Hungry</span>Pets 🐾</a>
     <div class="footer-links">
       <a href="index.html">Home</a>
       <a href="listings.html">Listings</a>
       <a href="post.html">Post</a>
       <a href="map.html">Map</a>
     </div>
-    <div class="footer-copy">© 2026 NoHungryPets.co.uk · Helping pets eat, one bowl at a time 🐾</div>
+    <div class="footer-copy">© 2026 NoHungryPets.com · Helping pets eat, one bowl at a time 🐾</div>
   </div>
 </footer>
 
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="js/auth.js"></script>
 <script src="js/main.js"></script>
+<script>
+
+  // ── LOAD USER DATA ─────────────────────────────────────
+  onAuthChange(async user => {
+    if (!user) {
+      window.location.href = 'login.html';
+      return;
+    }
+    // Populate from Firebase Auth
+    const initial = (user.displayName || user.email || '?')[0].toUpperCase();
+    document.getElementById('avatar-circle').childNodes[0].textContent = initial;
+    document.getElementById('profile-name').textContent = user.displayName || 'Pet lover';
+    document.getElementById('profile-email').textContent = user.email;
+    document.getElementById('header-name').textContent = (user.displayName || 'there').split(' ')[0];
+
+    // Get extra data from Firestore
+    const profile = await getUserProfile(user.uid);
+    if (profile) {
+      document.getElementById('profile-location').textContent = profile.postcode ? '📍 ' + profile.postcode : '📍 Location not set';
+      document.getElementById('stat-listings').textContent = profile.listings || 0;
+      document.getElementById('stat-claims').textContent = profile.claims || 0;
+      document.getElementById('impact-listings').textContent = profile.listings || 0;
+      document.getElementById('impact-claimed').textContent = profile.claims || 0;
+
+      // Settings view
+      document.getElementById('settings-name-view').textContent = profile.name || user.displayName || '—';
+      document.getElementById('settings-email-view').textContent = profile.email || user.email;
+      document.getElementById('settings-postcode-view').textContent = profile.postcode || 'Not set';
+
+      // Pre-fill edit form
+      document.getElementById('edit-name').value = profile.name || '';
+      document.getElementById('edit-postcode').value = profile.postcode || '';
+    }
+
+    const joined = user.metadata.creationTime
+      ? new Date(user.metadata.creationTime).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+      : 'Recently';
+    document.getElementById('profile-joined').textContent = 'Member since ' + joined;
+    document.getElementById('settings-joined-view').textContent = joined;
+  });
+
+  // ── SECTION SWITCHING ──────────────────────────────────
+  const sections = ['listings','activity','impact','settings'];
+  function showSection(name, el) {
+    if (el) {
+      document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+      el.classList.add('active');
+    }
+    sections.forEach(s => {
+      const sec = document.getElementById('section-' + s);
+      if (sec) sec.style.display = s === name ? 'block' : 'none';
+    });
+    // Impact section has two cards under one id group
+    if (name === 'impact') {
+      document.getElementById('section-impact').style.display = 'block';
+    }
+    return false;
+  }
+
+  // ── EDIT FORM ──────────────────────────────────────────
+  function toggleEditForm() {
+    const form = document.getElementById('edit-form');
+    const view = document.getElementById('settings-view');
+    form.classList.toggle('visible');
+    view.style.display = form.classList.contains('visible') ? 'none' : 'block';
+  }
+
+  async function saveProfile() {
+    const user = firebase.auth().currentUser;
+    if (!user) return;
+    const name = document.getElementById('edit-name').value.trim();
+    const postcode = document.getElementById('edit-postcode').value.trim().toUpperCase();
+    try {
+      await db.collection('users').doc(user.uid).update({ name, postcode });
+      await user.updateProfile({ displayName: name });
+      document.getElementById('profile-name').textContent = name;
+      document.getElementById('settings-name-view').textContent = name;
+      document.getElementById('settings-postcode-view').textContent = postcode || 'Not set';
+      document.getElementById('profile-location').textContent = postcode ? '📍 ' + postcode : '📍 Location not set';
+      document.getElementById('header-name').textContent = name.split(' ')[0];
+      toggleEditForm();
+      showToast('Profile updated! 🐾', 'success');
+    } catch (e) {
+      showToast('Could not save — please try again.', 'error');
+    }
+  }
+
+  // ── DELETE LISTING ─────────────────────────────────────
+  function deleteListing(btn) {
+    if (!confirm('Delete this listing?')) return;
+    btn.closest('.my-listing-row').style.opacity = '0';
+    setTimeout(() => btn.closest('.my-listing-row').remove(), 300);
+    showToast('Listing deleted.', 'success');
+  }
+
+  // ── LOGOUT ─────────────────────────────────────────────
+  function handleLogout() {
+    if (confirm('Log out of NoHungryPets?')) logOut();
+  }
+</script>
 </body>
 </html>
-
