@@ -27,6 +27,8 @@ body {
 }
 
 a { color: inherit; }
+a:visited { color: inherit; }
+a:active { color: inherit; }
 
 /* ── NAV ── */
 nav {
