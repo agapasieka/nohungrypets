@@ -514,8 +514,30 @@
         
         snapshot.forEach(doc => {
           const data = doc.data();
-          const statusColor = data.status === 'archived' ? 'var(--muted)' : 'var(--green)';
-          const statusText = data.status === 'archived' ? 'Claimed / Archived' : 'Available';
+          let statusColor = 'var(--green)';
+          let statusText = 'Available';
+          
+          if (data.status === 'archived') {
+            statusColor = 'var(--muted)';
+            statusText = 'Archived';
+          } else if (data.status === 'claimed') {
+            statusColor = 'var(--orange)';
+            statusText = 'Claimed (Auto-archives in 24h)';
+            
+            // Auto-archive check
+            if (data.claimedAt) {
+              const claimedTime = data.claimedAt.toDate().getTime();
+              const now = Date.now();
+              const hours24 = 24 * 60 * 60 * 1000;
+              if (now - claimedTime > hours24) {
+                // Trigger auto-archive in background
+                autoArchiveListing(doc.id, data.imageUrls);
+                statusColor = 'var(--muted)';
+                statusText = 'Archived';
+                data.status = 'archived'; // update local state for rendering
+              }
+            }
+          }
           
           let animalType = data.animals && data.animals.length > 0 ? data.animals[0] : 'Other';
           const animalIcon = animalEmojis[animalType] || '📦';
@@ -530,7 +552,7 @@
               <div class="my-listing-meta">${data.category || 'Item'} · Posted ${time} · <span class="status-span" style="color:${statusColor};font-weight:600">${statusText}</span></div>
             </div>
             <div class="my-listing-actions">
-              ${data.status !== 'archived' ? `<button class="btn-sm btn-sm-edit" onclick="archiveListing('${doc.id}', this)">Archive</button>` : ''}
+              ${data.status === 'available' ? `<button class="btn-sm btn-sm-edit" onclick="markClaimed('${doc.id}', this)">Mark Claimed</button>` : ''}
               <button class="btn-sm btn-sm-delete" onclick="deleteListing('${doc.id}', this)">Delete</button>
             </div>
           `;
@@ -596,37 +618,49 @@
     }
   }
 
-  // ── ARCHIVE LISTING ────────────────────────────────────
-  async function archiveListing(id, btn) {
-    if (!confirm('Mark this listing as claimed and archive it? Photos will be deleted to save space.')) return;
+  // ── MARK AS CLAIMED ────────────────────────────────────
+  async function markClaimed(id, btn) {
+    if (!confirm('Mark this listing as claimed? It will be hidden from the map and auto-archived in 24 hours.')) return;
     btn.disabled = true;
-    btn.textContent = 'Archiving...';
+    btn.textContent = 'Updating...';
     try {
       const docRef = db.collection('listings').doc(id);
-      const doc = await docRef.get();
-      const data = doc.data();
+      await docRef.update({ 
+        status: 'claimed', 
+        claimedAt: firebase.firestore.FieldValue.serverTimestamp() 
+      });
+      
+      showToast('Listing marked as claimed!', 'success');
+      const span = btn.parentElement.previousElementSibling.querySelector('.status-span');
+      span.style.color = 'var(--orange)';
+      span.textContent = 'Claimed (Auto-archives in 24h)';
+      btn.remove();
+    } catch(e) {
+      console.error(e);
+      showToast('Error updating listing.', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Mark Claimed';
+    }
+  }
+
+  // ── AUTO-ARCHIVE (BACKGROUND) ──────────────────────────
+  async function autoArchiveListing(id, imageUrls) {
+    try {
+      const docRef = db.collection('listings').doc(id);
       
       // Delete images from storage
-      if (data.imageUrls && data.imageUrls.length > 0) {
+      if (imageUrls && imageUrls.length > 0) {
         const storage = firebase.storage();
-        for (const url of data.imageUrls) {
+        for (const url of imageUrls) {
           try { await storage.refFromURL(url).delete(); } catch(e) { console.warn('Could not delete image', e); }
         }
       }
       
       // Update Firestore document
       await docRef.update({ status: 'archived', imageUrls: [] });
-      
-      showToast('Listing archived successfully!', 'success');
-      const span = btn.parentElement.previousElementSibling.querySelector('.status-span');
-      span.style.color = 'var(--muted)';
-      span.textContent = 'Claimed / Archived';
-      btn.remove();
+      console.log(`Auto-archived listing ${id}`);
     } catch(e) {
-      console.error(e);
-      showToast('Error archiving listing.', 'error');
-      btn.disabled = false;
-      btn.textContent = 'Archive';
+      console.error(`Failed to auto-archive ${id}`, e);
     }
   }
 
