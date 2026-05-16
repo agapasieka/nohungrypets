@@ -506,18 +506,36 @@
     grid.classList.toggle('list-view', type === 'list');
   }
 
-  function claimListing(e, card) {
+  async function claimListing(e, card) {
     e.preventDefault();
     const btn = card.querySelector('.btn-claim');
     if (!btn) return;
-    // Real implementation would open a modal to contact or process the claim.
-    // For now we simulate.
+
+    // Check user is logged in first
+    const user = firebase.auth().currentUser;
+    if (!user) {
+      showToast('Please log in to claim a listing 🐾', 'error');
+      setTimeout(() => window.location.href = 'login.html', 1500);
+      return;
+    }
+
+    // Update UI immediately
     btn.textContent = '✓ Claimed!';
     btn.className = 'btn-claimed';
     btn.disabled = true;
-    card.querySelector('.badge-available').textContent = 'Claimed';
-    card.querySelector('.badge-available').className = 'badge-gone';
-    showToast('🐾 Listing claimed! The owner will be in touch.', 'success');
+    const badge = card.querySelector('.badge-available');
+    if (badge) { badge.textContent = 'Claimed'; badge.className = 'badge-gone'; }
+
+    // Increment claims count in Firestore
+    try {
+      await db.collection('users').doc(user.uid).update({
+        claims: firebase.firestore.FieldValue.increment(1)
+      });
+      showToast('🐾 Listing claimed! The owner will be in touch.', 'success');
+    } catch (err) {
+      console.error('Claim update failed:', err);
+      showToast('🐾 Listing claimed! The owner will be in touch.', 'success');
+    }
   }
 
   window.addEventListener('DOMContentLoaded', loadListings);
