@@ -240,16 +240,17 @@
 
     <div class="filter-section">
       <h4>Animal type</h4>
-      <div class="filter-chips">
-        <button class="chip active" onclick="toggleChip(this)">All</button>
-        <button class="chip" onclick="toggleChip(this)">🐕 Dog</button>
-        <button class="chip" onclick="toggleChip(this)">🐈 Cat</button>
-        <button class="chip" onclick="toggleChip(this)">🐇 Rabbit</button>
-        <button class="chip" onclick="toggleChip(this)">🐹 Small pets</button>
-        <button class="chip" onclick="toggleChip(this)">🐦 Bird</button>
-        <button class="chip" onclick="toggleChip(this)">🦎 Reptile</button>
-        <button class="chip" onclick="toggleChip(this)">🐟 Fish</button>
-        <button class="chip" onclick="toggleChip(this)">🐴 Horse</button>
+      <div class="filter-chips" id="animal-filters">
+        <button class="chip active" data-val="All" onclick="toggleFilter(this, 'animal')">All</button>
+        <button class="chip" data-val="Dog" onclick="toggleFilter(this, 'animal')">🐕 Dog</button>
+        <button class="chip" data-val="Cat" onclick="toggleFilter(this, 'animal')">🐈 Cat</button>
+        <button class="chip" data-val="Rabbit" onclick="toggleFilter(this, 'animal')">🐇 Rabbit</button>
+        <button class="chip" data-val="Small pets" onclick="toggleFilter(this, 'animal')">🐹 Small pets</button>
+        <button class="chip" data-val="Bird" onclick="toggleFilter(this, 'animal')">🐦 Bird</button>
+        <button class="chip" data-val="Reptile" onclick="toggleFilter(this, 'animal')">🦎 Reptile</button>
+        <button class="chip" data-val="Fish" onclick="toggleFilter(this, 'animal')">🐟 Fish</button>
+        <button class="chip" data-val="Horse" onclick="toggleFilter(this, 'animal')">🐴 Horse</button>
+        <button class="chip" data-val="Farm animal" onclick="toggleFilter(this, 'animal')">🐄 Farm animal</button>
       </div>
     </div>
 
@@ -257,21 +258,21 @@
 
     <div class="filter-section">
       <h4>Item type</h4>
-      <div class="filter-chips">
-        <button class="chip active" onclick="toggleChip(this)">All</button>
-        <button class="chip" onclick="toggleChip(this)">🥫 Wet food</button>
-        <button class="chip" onclick="toggleChip(this)">🌾 Dry food</button>
-        <button class="chip" onclick="toggleChip(this)">🦴 Treats</button>
-        <button class="chip" onclick="toggleChip(this)">💊 Supplements</button>
-        <button class="chip" onclick="toggleChip(this)">🧸 Toys</button>
-        <button class="chip" onclick="toggleChip(this)">🛏️ Bedding</button>
-        <button class="chip" onclick="toggleChip(this)">📦 Other supplies</button>
+      <div class="filter-chips" id="item-filters">
+        <button class="chip active" data-val="All" onclick="toggleFilter(this, 'item')">All</button>
+        <button class="chip" data-val="Wet food" onclick="toggleFilter(this, 'item')">🥫 Wet food</button>
+        <button class="chip" data-val="Dry food / kibble" onclick="toggleFilter(this, 'item')">🌾 Dry food / kibble</button>
+        <button class="chip" data-val="Treats & chews" onclick="toggleFilter(this, 'item')">🦴 Treats &amp; chews</button>
+        <button class="chip" data-val="Toys" onclick="toggleFilter(this, 'item')">🧸 Toys</button>
+        <button class="chip" data-val="Bedding / litter" onclick="toggleFilter(this, 'item')">🛏️ Bedding / litter</button>
+        <button class="chip" data-val="Equipment / accessories" onclick="toggleFilter(this, 'item')">🏠 Equipment / accessories</button>
+        <button class="chip" data-val="Other" onclick="toggleFilter(this, 'item')">📦 Other</button>
       </div>
     </div>
 
     <hr class="filter-divider">
 
-    <div class="filter-section">
+    <div class="filter-section" style="display:none;">
       <h4>Distance</h4>
       <input type="range" class="filter-range" min="0.5" max="10" step="0.5" value="5" oninput="updateRange(this)">
       <div class="range-label">
@@ -279,8 +280,7 @@
         <span id="range-val">5 miles</span>
       </div>
     </div>
-
-    <hr class="filter-divider">
+    <!-- <hr class="filter-divider"> -->
 
     <div class="filter-section">
       <h4>Availability</h4>
@@ -291,7 +291,7 @@
     </div>
 
     <hr class="filter-divider">
-    <button class="btn-full" style="background:var(--warm);color:var(--brown);margin-top:0" onclick="showToast('Filters cleared!','success')">Clear all filters</button>
+    <button class="btn-full" style="background:var(--warm);color:var(--brown);margin-top:0" onclick="clearFilters()">Clear all filters</button>
   </aside>
 
   <!-- MAIN CONTENT -->
@@ -299,7 +299,7 @@
     <div class="search-bar">
       <div class="search-input-wrap">
         <span class="search-icon">🔍</span>
-        <input type="text" placeholder="Search listings e.g. Royal Canin, cat food..."/>
+        <input type="text" id="search-input" placeholder="Search listings e.g. Royal Canin, cat food..." oninput="handleSearch()"/>
       </div>
       <select class="sort-select">
         <option>Nearest first</option>
@@ -309,7 +309,7 @@
     </div>
 
     <div class="results-meta">
-      <div class="results-count">Showing <strong>12 listings</strong> within 5 miles</div>
+      <div class="results-count" id="results-count">Loading listings...</div>
       <div class="view-toggle">
         <button class="view-btn active" onclick="setView('grid',this)" title="Grid view">⊞</button>
         <button class="view-btn" onclick="setView('list',this)" title="List view">≡</button>
@@ -317,128 +317,14 @@
     </div>
 
     <div class="listings-grid" id="listings-grid">
-
-      <a href="#" class="listing-card" onclick="claimListing(event,this)">
-        <div class="listing-card-img bg-1">
-          🦴
-          <div class="listing-badge-wrap">
-            <span class="badge-available">Available</span>
-          </div>
-        </div>
-        <div class="listing-card-content">
-          <div class="listing-card-body">
-            <h4>Royal Canin Medium Adult 4kg (unopened)</h4>
-            <div class="listing-meta">
-              <span>📍 0.3 miles</span>
-              <span>🕐 2 hrs ago</span>
-            </div>
-            <div class="listing-animals">
-              <span class="animal-tag">🐕 Dog</span>
-            </div>
-          </div>
-          <div class="listing-card-footer">
-            <div class="user-info">
-              <div class="user-avatar av-1">S</div>
-              <span class="user-name">Sarah M.</span>
-            </div>
-            <button class="btn-claim">Claim →</button>
-          </div>
-        </div>
-      </a>
-
-      <a href="#" class="listing-card" onclick="claimListing(event,this)">
-        <div class="listing-card-img bg-2">🐟
-          <div class="listing-badge-wrap"><span class="badge-available">Available</span></div>
-        </div>
-        <div class="listing-card-content">
-          <div class="listing-card-body">
-            <h4>Whiskas Tuna Pouches x24</h4>
-            <div class="listing-meta"><span>📍 0.8 miles</span><span>🕐 5 hrs ago</span></div>
-            <div class="listing-animals"><span class="animal-tag">🐈 Cat</span></div>
-          </div>
-          <div class="listing-card-footer">
-            <div class="user-info"><div class="user-avatar av-2">J</div><span class="user-name">James T.</span></div>
-            <button class="btn-claim">Claim →</button>
-          </div>
-        </div>
-      </a>
-
-      <a href="#" class="listing-card" onclick="claimListing(event,this)">
-        <div class="listing-card-img bg-3">🐇
-          <div class="listing-badge-wrap"><span class="badge-available">Available</span></div>
-        </div>
-        <div class="listing-card-content">
-          <div class="listing-card-body">
-            <h4>Supreme Science Rabbit Pellets 2kg</h4>
-            <div class="listing-meta"><span>📍 1.2 miles</span><span>🕐 Yesterday</span></div>
-            <div class="listing-animals"><span class="animal-tag">🐇 Rabbit</span><span class="animal-tag">🐹 Small pets</span></div>
-          </div>
-          <div class="listing-card-footer">
-            <div class="user-info"><div class="user-avatar av-3">L</div><span class="user-name">Lisa K.</span></div>
-            <button class="btn-claim">Claim →</button>
-          </div>
-        </div>
-      </a>
-
-      <a href="#" class="listing-card" onclick="claimListing(event,this)">
-        <div class="listing-card-img bg-4">🐦
-          <div class="listing-badge-wrap"><span class="badge-available">Available</span></div>
-        </div>
-        <div class="listing-card-content">
-          <div class="listing-card-body">
-            <h4>Versele-Laga Parrot Mix 3kg</h4>
-            <div class="listing-meta"><span>📍 1.5 miles</span><span>🕐 2 days ago</span></div>
-            <div class="listing-animals"><span class="animal-tag">🐦 Bird</span></div>
-          </div>
-          <div class="listing-card-footer">
-            <div class="user-info"><div class="user-avatar av-4">R</div><span class="user-name">Rachel P.</span></div>
-            <button class="btn-claim">Claim →</button>
-          </div>
-        </div>
-      </a>
-
-      <a href="#" class="listing-card">
-        <div class="listing-card-img bg-5">🐕
-          <div class="listing-badge-wrap"><span class="badge-gone">Claimed</span></div>
-        </div>
-        <div class="listing-card-content">
-          <div class="listing-card-body">
-            <h4>Pedigree Puppy Dry Food 3kg</h4>
-            <div class="listing-meta"><span>📍 1.8 miles</span><span>🕐 3 days ago</span></div>
-            <div class="listing-animals"><span class="animal-tag">🐕 Dog</span></div>
-          </div>
-          <div class="listing-card-footer">
-            <div class="user-info"><div class="user-avatar av-5">M</div><span class="user-name">Mike B.</span></div>
-            <button class="btn-claimed" disabled>Claimed</button>
-          </div>
-        </div>
-      </a>
-
-      <a href="#" class="listing-card" onclick="claimListing(event,this)">
-        <div class="listing-card-img bg-6">🦎
-          <div class="listing-badge-wrap"><span class="badge-available">Available</span></div>
-        </div>
-        <div class="listing-card-content">
-          <div class="listing-card-body">
-            <h4>Zoo Med Repti Basking Bulb + Crickets</h4>
-            <div class="listing-meta"><span>📍 2.1 miles</span><span>🕐 4 days ago</span></div>
-            <div class="listing-animals"><span class="animal-tag">🦎 Reptile</span></div>
-          </div>
-          <div class="listing-card-footer">
-            <div class="user-info"><div class="user-avatar av-6">A</div><span class="user-name">Anya W.</span></div>
-            <button class="btn-claim">Claim →</button>
-          </div>
-        </div>
-      </a>
-
+      <!-- Dynamic listings will be rendered here -->
     </div>
 
-    <div class="pagination">
+    <!-- Pagination hidden for now -->
+    <!-- <div class="pagination">
       <button class="page-btn active">1</button>
-      <button class="page-btn">2</button>
-      <button class="page-btn">3</button>
-      <button class="page-btn">→</button>
-    </div>
+      ...
+    </div> -->
   </main>
 </div>
 
@@ -455,25 +341,173 @@
   </div>
 </footer>
 
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="js/auth.js"></script>
 <script src="js/main.js"></script>
 <script>
-  function toggleChip(el) {
-    el.classList.toggle('active');
-    showToast('Filter updated!', 'success');
+  let allListings = [];
+  let filters = {
+    animal: 'All',
+    item: 'All',
+    search: ''
+  };
+
+  const animalEmojis = {
+    'Dog':'🦴','Cat':'🐟','Rabbit':'🥬',
+    'Small pets':'🌾','Bird':'🐦','Reptile':'🦎',
+    'Fish':'🐟','Horse':'🌿','Farm animal':'🌿'
+  };
+
+  async function loadListings() {
+    try {
+      const snap = await db.collection('listings')
+        .where('status', '==', 'available')
+        .orderBy('createdAt', 'desc')
+        .get();
+        
+      allListings = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      renderListings();
+    } catch (e) {
+      console.error(e);
+      document.getElementById('listings-grid').innerHTML = '<div class="empty-state"><h3>Error loading listings</h3><p>Please try again later.</p></div>';
+    }
   }
-  function updateRange(el) {
-    document.getElementById('range-val').textContent = el.value + ' miles';
+
+  function formatTimeAgo(timestamp) {
+    if (!timestamp) return 'Just now';
+    const seconds = Math.floor((new Date() - timestamp.toDate()) / 1000);
+    let interval = seconds / 86400;
+    if (interval > 1) return Math.floor(interval) + " days ago";
+    interval = seconds / 3600;
+    if (interval > 1) return Math.floor(interval) + " hrs ago";
+    interval = seconds / 60;
+    if (interval > 1) return Math.floor(interval) + " mins ago";
+    return "Just now";
   }
+
+  function renderListings() {
+    const grid = document.getElementById('listings-grid');
+    
+    // Apply filters
+    const filtered = allListings.filter(l => {
+      let animalMatch = true;
+      if (filters.animal !== 'All') {
+        animalMatch = l.animals && l.animals.includes(filters.animal);
+      }
+      
+      let itemMatch = true;
+      if (filters.item !== 'All') {
+        itemMatch = l.category === filters.item;
+      }
+      
+      let searchMatch = true;
+      if (filters.search) {
+        const q = filters.search.toLowerCase();
+        searchMatch = (l.itemName && l.itemName.toLowerCase().includes(q)) || 
+                      (l.description && l.description.toLowerCase().includes(q));
+      }
+      
+      return animalMatch && itemMatch && searchMatch;
+    });
+
+    document.getElementById('results-count').innerHTML = `Showing <strong>${filtered.length} listing${filtered.length === 1 ? '' : 's'}</strong>`;
+
+    if (filtered.length === 0) {
+      grid.innerHTML = `
+        <div class="empty-state">
+          <div class="emoji">🔍</div>
+          <h3>No listings found</h3>
+          <p>Try adjusting your filters or search terms.</p>
+        </div>
+      `;
+      return;
+    }
+
+    grid.innerHTML = filtered.map((l, i) => {
+      const bgClass = `bg-${(i % 6) + 1}`;
+      const avClass = `av-${(i % 6) + 1}`;
+      
+      let imgContent = '';
+      if (l.imageUrls && l.imageUrls.length > 0) {
+        imgContent = `<img src="${l.imageUrls[0]}" style="width:100%;height:100%;object-fit:cover;">`;
+      } else {
+        const primaryAnimal = l.animals && l.animals.length > 0 ? l.animals[0] : null;
+        const emoji = animalEmojis[primaryAnimal] || '📦';
+        imgContent = emoji;
+      }
+
+      const animalTags = l.animals ? l.animals.map(a => `<span class="animal-tag">${a}</span>`).join('') : '';
+
+      return `
+        <a href="#" class="listing-card" onclick="claimListing(event,this)">
+          <div class="listing-card-img ${bgClass}">
+            ${imgContent}
+            <div class="listing-badge-wrap">
+              <span class="badge-available">Available</span>
+            </div>
+          </div>
+          <div class="listing-card-content">
+            <div class="listing-card-body">
+              <h4>${l.itemName}</h4>
+              <div class="listing-meta">
+                <span>📍 ${l.postcode || 'Nearby'}</span>
+                <span>🕐 ${formatTimeAgo(l.createdAt)}</span>
+              </div>
+              <div class="listing-animals">${animalTags}</div>
+            </div>
+            <div class="listing-card-footer">
+              <div class="user-info">
+                <div class="user-avatar ${avClass}">${l.posterName ? l.posterName.charAt(0).toUpperCase() : '?'}</div>
+                <span class="user-name">${l.posterName || 'Guest'}</span>
+              </div>
+              <button class="btn-claim">Claim →</button>
+            </div>
+          </div>
+        </a>
+      `;
+    }).join('');
+  }
+
+  function toggleFilter(el, type) {
+    const parent = el.parentElement;
+    parent.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    
+    filters[type] = el.getAttribute('data-val');
+    renderListings();
+  }
+
+  function handleSearch() {
+    filters.search = document.getElementById('search-input').value.trim();
+    renderListings();
+  }
+
+  function clearFilters() {
+    document.querySelectorAll('.filter-chips').forEach(container => {
+      container.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      container.querySelector('.chip[data-val="All"]').classList.add('active');
+    });
+    document.getElementById('search-input').value = '';
+    filters = { animal: 'All', item: 'All', search: '' };
+    renderListings();
+    showToast('Filters cleared!', 'success');
+  }
+
   function setView(type, btn) {
     document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     const grid = document.getElementById('listings-grid');
     grid.classList.toggle('list-view', type === 'list');
   }
+
   function claimListing(e, card) {
     e.preventDefault();
     const btn = card.querySelector('.btn-claim');
     if (!btn) return;
+    // Real implementation would open a modal to contact or process the claim.
+    // For now we simulate.
     btn.textContent = '✓ Claimed!';
     btn.className = 'btn-claimed';
     btn.disabled = true;
@@ -481,6 +515,8 @@
     card.querySelector('.badge-available').className = 'badge-gone';
     showToast('🐾 Listing claimed! The owner will be in touch.', 'success');
   }
+
+  window.addEventListener('DOMContentLoaded', loadListings);
 </script>
 </body>
 </html>
