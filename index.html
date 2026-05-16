@@ -1090,16 +1090,19 @@
     try {
       const snap = await db.collection('listings')
         .where('status', '==', 'available')
-        .orderBy('createdAt', 'desc')
-        .limit(3)
         .get();
 
       if (snap.empty) {
         grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 3rem 0; color:var(--muted)">No listings available right now. Be the first to post!</div>';
         return;
       }
+      const docs = snap.docs.sort((a, b) => {
+        const ta = a.data().createdAt ? a.data().createdAt.toMillis() : 0;
+        const tb = b.data().createdAt ? b.data().createdAt.toMillis() : 0;
+        return tb - ta;
+      }).slice(0, 3);
 
-      grid.innerHTML = snap.docs.map((docSnap, i) => {
+      grid.innerHTML = docs.map((docSnap, i) => {
         const l = docSnap.data();
         const bgClass = `bg-${(i % 6) + 1}`;
         const avClass = `av-${(i % 6) + 1}`;

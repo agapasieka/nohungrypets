@@ -364,10 +364,14 @@
     try {
       const snap = await db.collection('listings')
         .where('status', '==', 'available')
-        .orderBy('createdAt', 'desc')
         .get();
         
       allListings = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      allListings.sort((a, b) => {
+        const ta = a.createdAt ? a.createdAt.toMillis() : 0;
+        const tb = b.createdAt ? b.createdAt.toMillis() : 0;
+        return tb - ta;
+      });
       renderListings();
     } catch (e) {
       console.error(e);
