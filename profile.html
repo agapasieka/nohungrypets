@@ -191,6 +191,16 @@
       .form-row-2 { grid-template-columns: 1fr; }
       .my-listing-actions { flex-direction: column; }
     }
+    /* ANIMAL SELECTOR */
+    .animal-selector { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.3rem; }
+    .animal-btn {
+      padding: 0.5rem 0.9rem; border-radius: 50px;
+      border: 1.5px solid rgba(61,43,31,0.15); background: white;
+      font-size: 0.85rem; color: var(--text); cursor: pointer;
+      font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+    }
+    .animal-btn:hover { border-color: var(--orange); color: var(--orange); }
+    .animal-btn.selected { background: var(--orange); border-color: var(--orange); color: white; }
   </style>
 </head>
 <body>
@@ -412,6 +422,10 @@
             <div style="font-size:0.95rem;color:var(--brown);font-weight:500" id="settings-joined-view">—</div>
           </div>
         </div>
+        <div style="margin-top:1.5rem">
+          <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:0.3rem">Pets I own</div>
+          <div style="font-size:0.95rem;color:var(--brown);font-weight:500" id="settings-animals-view">—</div>
+        </div>
       </div>
 
       <!-- EDIT FORM -->
@@ -426,7 +440,22 @@
             <input type="text" id="edit-postcode" placeholder="e.g. DE14 1AA"/>
           </div>
         </div>
-        <div style="display:flex;gap:0.75rem;margin-top:0.5rem">
+        <div class="form-group" style="margin-top:1rem">
+          <label>What pets do you own?</label>
+          <div class="animal-selector" id="edit-animals">
+            <button type="button" class="animal-btn" onclick="toggleAnimal(this)">None</button>
+            <button type="button" class="animal-btn" onclick="toggleAnimal(this)">Dog</button>
+            <button type="button" class="animal-btn" onclick="toggleAnimal(this)">Cat</button>
+            <button type="button" class="animal-btn" onclick="toggleAnimal(this)">Rabbit</button>
+            <button type="button" class="animal-btn" onclick="toggleAnimal(this)">Small pets</button>
+            <button type="button" class="animal-btn" onclick="toggleAnimal(this)">Bird</button>
+            <button type="button" class="animal-btn" onclick="toggleAnimal(this)">Reptile</button>
+            <button type="button" class="animal-btn" onclick="toggleAnimal(this)">Fish</button>
+            <button type="button" class="animal-btn" onclick="toggleAnimal(this)">Horse</button>
+            <button type="button" class="animal-btn" onclick="toggleAnimal(this)">Farm animal</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:0.75rem;margin-top:1rem">
           <button class="btn-primary" onclick="saveProfile()" style="padding:0.7rem 1.5rem;font-size:0.9rem">Save changes</button>
           <button class="btn-secondary" onclick="toggleEditForm()" style="padding:0.7rem 1.5rem;font-size:0.9rem">Cancel</button>
         </div>
@@ -492,10 +521,26 @@
       document.getElementById('settings-name-view').textContent = profile.name || user.displayName || '—';
       document.getElementById('settings-email-view').textContent = profile.email || user.email;
       document.getElementById('settings-postcode-view').textContent = profile.postcode || 'Not set';
+      
+      const owned = profile.ownedAnimals || [];
+      document.getElementById('settings-animals-view').textContent = owned.length ? owned.join(', ') : 'None';
 
       // Pre-fill edit form
       document.getElementById('edit-name').value = profile.name || '';
       document.getElementById('edit-postcode').value = profile.postcode || '';
+      
+      // Pre-select animal chips
+      document.querySelectorAll('#edit-animals .animal-btn').forEach(btn => {
+        if (owned.includes(btn.textContent.trim())) {
+          btn.classList.add('selected');
+        } else {
+          btn.classList.remove('selected');
+        }
+      });
+      // Fallback if empty and no "None" selected
+      if (owned.length === 0 && document.querySelectorAll('#edit-animals .animal-btn.selected').length === 0) {
+        document.querySelector('#edit-animals .animal-btn').classList.add('selected'); // Select 'None'
+      }
     }
 
     // Load User Listings
@@ -597,17 +642,38 @@
     view.style.display = form.classList.contains('visible') ? 'none' : 'block';
   }
 
+  function toggleAnimal(btn) {
+    if (btn.textContent === 'None') {
+      if (!btn.classList.contains('selected')) {
+        btn.parentElement.querySelectorAll('.animal-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+      } else {
+        btn.classList.remove('selected');
+      }
+    } else {
+      btn.parentElement.querySelector('.animal-btn:first-child').classList.remove('selected');
+      btn.classList.toggle('selected');
+    }
+  }
+
   async function saveProfile() {
     const user = firebase.auth().currentUser;
     if (!user) return;
     const name = document.getElementById('edit-name').value.trim();
     const postcode = document.getElementById('edit-postcode').value.trim().toUpperCase();
+    
+    const ownedAnimals = [...document.querySelectorAll('#edit-animals .animal-btn.selected')]
+                          .map(b => b.textContent.trim());
+                          
+    if (ownedAnimals.length === 0) return showToast('Please select at least one pet option (or None).', 'error');
+
     try {
-      await db.collection('users').doc(user.uid).update({ name, postcode });
+      await db.collection('users').doc(user.uid).update({ name, postcode, ownedAnimals });
       await user.updateProfile({ displayName: name });
       document.getElementById('profile-name').textContent = name;
       document.getElementById('settings-name-view').textContent = name;
       document.getElementById('settings-postcode-view').textContent = postcode || 'Not set';
+      document.getElementById('settings-animals-view').textContent = ownedAnimals.length ? ownedAnimals.join(', ') : 'None';
       document.getElementById('profile-location').textContent = postcode ? '📍 ' + postcode : '📍 Location not set';
       document.getElementById('header-name').textContent = name.split(' ')[0];
       toggleEditForm();

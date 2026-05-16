@@ -181,6 +181,17 @@
     }
     .form-group input:focus { border-color: var(--orange); }
 
+    /* ANIMAL SELECTOR */
+    .animal-selector { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.3rem; }
+    .animal-btn {
+      padding: 0.5rem 0.9rem; border-radius: 50px;
+      border: 1.5px solid rgba(61,43,31,0.15); background: white;
+      font-size: 0.85rem; color: var(--text); cursor: pointer;
+      font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+    }
+    .animal-btn:hover { border-color: var(--orange); color: var(--orange); }
+    .animal-btn.selected { background: var(--orange); border-color: var(--orange); color: white; }
+
     /* PASSWORD WRAP */
     .password-wrap { position: relative; }
     .password-wrap input { padding-right: 3rem; }
@@ -347,6 +358,21 @@
           <input type="text" id="signup-postcode" placeholder="e.g. DE14 1AA" autocomplete="postal-code"/>
         </div>
         <div class="form-group">
+          <label>What pets do you own?</label>
+          <div class="animal-selector" id="signup-animals">
+            <button type="button" class="animal-btn" onclick="toggleAnimal(this)">None</button>
+            <button type="button" class="animal-btn" onclick="toggleAnimal(this)">Dog</button>
+            <button type="button" class="animal-btn" onclick="toggleAnimal(this)">Cat</button>
+            <button type="button" class="animal-btn" onclick="toggleAnimal(this)">Rabbit</button>
+            <button type="button" class="animal-btn" onclick="toggleAnimal(this)">Small pets</button>
+            <button type="button" class="animal-btn" onclick="toggleAnimal(this)">Bird</button>
+            <button type="button" class="animal-btn" onclick="toggleAnimal(this)">Reptile</button>
+            <button type="button" class="animal-btn" onclick="toggleAnimal(this)">Fish</button>
+            <button type="button" class="animal-btn" onclick="toggleAnimal(this)">Horse</button>
+            <button type="button" class="animal-btn" onclick="toggleAnimal(this)">Farm animal</button>
+          </div>
+        </div>
+        <div class="form-group">
           <label for="signup-password">Password</label>
           <div class="password-wrap">
             <input type="password" id="signup-password" placeholder="At least 6 characters" oninput="checkStrength(this.value)"/>
@@ -489,6 +515,21 @@
     return map[code] || 'Something went wrong. Please try again.';
   }
 
+  // ── ANIMAL TOGGLE ──────────────────────────────────────
+  function toggleAnimal(btn) {
+    if (btn.textContent === 'None') {
+      if (!btn.classList.contains('selected')) {
+        btn.parentElement.querySelectorAll('.animal-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+      } else {
+        btn.classList.remove('selected');
+      }
+    } else {
+      btn.parentElement.querySelector('.animal-btn:first-child').classList.remove('selected');
+      btn.classList.toggle('selected');
+    }
+  }
+
   // ── SIGN UP ────────────────────────────────────────────
   async function handleSignUp() {
     hideErr('signup-error');
@@ -497,10 +538,14 @@
     const postcode = document.getElementById('signup-postcode').value.trim().toUpperCase();
     const password = document.getElementById('signup-password').value;
     const terms    = document.getElementById('signup-terms').checked;
+    
+    const ownedAnimals = [...document.querySelectorAll('#signup-animals .animal-btn.selected')]
+                          .map(b => b.textContent.trim());
 
     if (!name)     return showErr('signup-error', 'Please enter your name.');
     if (!email)    return showErr('signup-error', 'Please enter your email address.');
     if (!postcode) return showErr('signup-error', 'Please enter your postcode.');
+    if (ownedAnimals.length === 0) return showErr('signup-error', 'Please select at least one pet option (or None).');
     if (!password) return showErr('signup-error', 'Please choose a password.');
     if (password.length < 6) return showErr('signup-error', 'Password must be at least 6 characters.');
     if (!terms)    return showErr('signup-error', 'Please agree to the terms to continue.');
@@ -514,7 +559,7 @@
       const result = await auth.createUserWithEmailAndPassword(email, password);
       await result.user.updateProfile({ displayName: name });
       await db.collection('users').doc(result.user.uid).set({
-        name, email, postcode,
+        name, email, postcode, ownedAnimals,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         listings: 0, claims: 0
       });
@@ -566,6 +611,7 @@
           name: result.user.displayName,
           email: result.user.email,
           postcode: '',
+          ownedAnimals: [],
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           listings: 0, claims: 0
         });

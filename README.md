@@ -17,20 +17,20 @@ To manage users and dynamic listings, this project is designed to integrate with
 3. Enable **Firestore Database** to store listings and user profiles.
 4. Add your Firebase configuration keys to the `js/main.js` file (or a dedicated config file) using the Firebase Web SDK.
 
-### 2. Free Maps Integration
+### Free Maps Integration
 The map feature uses **Leaflet** combined with **OpenStreetMap** tile layers. 
 - **No API keys are required.**
 - It is completely free and open-source.
 - The map initialization script is included at the bottom of the HTML files (e.g., `index.html` and `map.html`). 
 - When generating real markers, fetch the coordinates from your Firestore database and plot them dynamically using Leaflet's `L.marker()` API.
 
-### 3. Image Hosting (Cloudinary)
+### Image Hosting (Cloudinary)
 To avoid the need for a credit card in Firebase, the platform uses **Cloudinary** for completely free image hosting (up to 25 GB).
 - When a user posts a listing, the photos are automatically compressed on the client side using the HTML Canvas API.
 - The photos are securely uploaded directly to Cloudinary using an **Unsigned Upload Preset**.
 - The resulting image URLs are saved to the listing document in Firestore.
 
-### 4. Auto-Archiving
+### Auto-Archiving
 To keep the database clean, listings support an auto-archiving flow:
 - When an item is taken, the owner marks it as **"Claimed"**.
 - This applies a badge to the listing but leaves it visible for 24 hours.
@@ -42,12 +42,12 @@ Here is a diagram illustrating the signup process and how it integrates with Fir
 
 ```mermaid
 flowchart TD
-    A[User opens NoHungryPets] --> B{Clicks Sign Up}
+    A[User opens NoHungryPets] --> B{Create free account}
     B --> C[Signup Modal Opens]
-    C --> D[User fills details: Name, Email, Postcode, Password]
+    C --> D[User fills details: Name, Email, Postcode, Owned Animals, Password]
     D --> E{Clicks Create Account}
     E --> F[Firebase Auth: Create User]
-    F -->|Success| G[Firestore: Save user profile & postcode]
+    F -->|Success| G[Firestore: Save user profile, postcode, & animals]
     G --> H[User is Logged In]
     F -->|Error| I[Display Error Message]
 ```
