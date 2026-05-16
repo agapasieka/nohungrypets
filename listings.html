@@ -467,7 +467,7 @@
       }
 
       return `
-        <a href="#" class="listing-card" ${claimBtnOnClick}>
+        <a href="#" class="listing-card" data-listing-id="${l.id}" ${claimBtnOnClick}>
           <div class="listing-card-img ${bgClass}">
             ${imgContent}
             <div class="listing-badge-wrap">
@@ -530,7 +530,17 @@
 
   async function claimListing(e, card) {
     e.preventDefault();
-    const btn = card.querySelector('.btn-claim');
+    const listingElement = card.closest('.listing-card');
+    if (!listingElement) return;
+
+    const listingId = listingElement.dataset.listingId;
+    if (!listingId) {
+      console.error('Listing ID not found');
+      showToast('Error claiming listing. Please try again.', 'error');
+      return;
+    }
+
+    const btn = listingElement.querySelector('.btn-claim');
     if (!btn) return;
 
     // Check user is logged in first
@@ -545,13 +555,13 @@
     btn.textContent = '✓ Claimed!';
     btn.className = 'btn-claimed';
     btn.disabled = true;
-    const badge = card.querySelector('.badge-available');
+    const badge = listingElement.querySelector('.badge-available');
     if (badge) { badge.textContent = 'Claimed'; badge.className = 'badge-gone'; }
 
     // Update listing status to claimed and increment user's claims count
     try {
       // Update the listing document to mark as claimed
-      await db.collection('listings').doc(l.id).update({
+      await db.collection('listings').doc(listingId).update({
         status: 'claimed',
         claimedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
@@ -569,7 +579,7 @@
       btn.textContent = 'Claim →';
       btn.className = 'btn-claim';
       btn.disabled = false;
-      const badge = card.querySelector('.badge-gone');
+      const badge = listingElement.querySelector('.badge-gone');
       if (badge) { badge.textContent = 'Available'; badge.className = 'badge-available'; }
     }
   }
