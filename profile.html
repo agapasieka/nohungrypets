@@ -813,6 +813,35 @@
       : 'Recently';
     document.getElementById('profile-joined').textContent = 'Member since ' + joined;
     document.getElementById('settings-joined-view').textContent = joined;
+
+    // ── MESSAGING FUNCTIONS ─────────────────────────────────────
+    let conversationsUnsubscribe = null;
+    let messagesUnsubscribe = null;
+    let currentConversationId = null;
+    let currentUserId = null;
+
+    // Initialize messaging when auth state changes
+    // Clean up existing subscriptions
+    if (conversationsUnsubscribe) conversationsUnsubscribe();
+    if (messagesUnsubscribe) messagesUnsubscribe();
+
+    currentConversationId = null;
+
+    if (user) {
+      currentUserId = user.uid;
+
+      // Update unread badge - will be handled by the conversation subscription
+
+      // Subscribe to conversations
+      conversationsUnsubscribe = window.messaging.subscribeToConversations(user.uid, (conversations) => {
+        renderConversationsList(conversations);
+        updateUnreadBadge();
+      });
+    } else {
+      // User logged out
+      document.getElementById('conversations-list').innerHTML = '';
+      document.getElementById('messages-badge').textContent = '0';
+    }
   });
 
   // ── SECTION SWITCHING ──────────────────────────────────
@@ -973,37 +1002,6 @@
     if (confirm('Log out of NoHungryPets?')) logOut();
   }
 
-  // ── MESSAGING FUNCTIONS ─────────────────────────────────────
-  let conversationsUnsubscribe = null;
-  let messagesUnsubscribe = null;
-  let currentConversationId = null;
-  let currentUserId = null;
-
-  // Initialize messaging when auth state changes
-  onAuthChange(async (user) => {
-    // Clean up existing subscriptions
-    if (conversationsUnsubscribe) conversationsUnsubscribe();
-    if (messagesUnsubscribe) messagesUnsubscribe();
-
-    currentConversationId = null;
-
-    if (user) {
-      currentUserId = user.uid;
-
-      // Update unread badge
-      updateUnreadBadge();
-
-      // Subscribe to conversations
-      conversationsUnsubscribe = subscribeToConversations(user.id, (conversations) => {
-        renderConversationsList(conversations);
-        updateUnreadBadge();
-      });
-    } else {
-      // User logged out
-      document.getElementById('conversations-list').innerHTML = '';
-      document.getElementById('messages-badge').textContent = '0';
-    }
-  });
 
   // Render conversations list
   function renderConversationsList(conversations) {
@@ -1048,10 +1046,10 @@
     if (messagesUnsubscribe) messagesUnsubscribe();
 
     // Mark messages as read
-    await markMessagesAsRead(conversationId, currentUserId);
+    await window.messaging.markMessagesAsRead(conversationId, currentUserId);
 
     // Subscribe to messages
-    messagesUnsubscribe = subscribeToMessages(conversationId, (messages) => {
+    messagesUnsubscribe = window.messaging.subscribeToMessages(conversationId, (messages) => {
       renderMessagesList(messages);
     });
   }
@@ -1110,7 +1108,7 @@
     if (!text || !currentConversationId) return;
 
     try {
-      await sendMessage(currentConversationId, currentUserId, text);
+      await window.messaging.sendMessage(currentConversationId, currentUserId, text);
       input.value = '';
       input.focus();
     } catch (error) {
