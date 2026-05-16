@@ -1,3 +1,4 @@
+// Copyright (c) 2026 NoHungryPets
 // NoHungryPets - Firebase Auth
 // Uses Firebase v9+ CDN (compat mode for simplicity with GitHub Pages)
 

@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- Copyright (c) 2026 NoHungryPets -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -486,7 +487,6 @@
       width: 10px; height: 10px; border-radius: 50%;
     }
 
-    .map-features { }
     .map-features h2 {
       font-family: 'Fraunces', serif; font-size: 2.4rem;
       font-weight: 900; color: var(--brown);
@@ -1014,6 +1014,10 @@
 
   function closeModal() {
     document.getElementById('modal').classList.remove('open');
+    // Only remove has-notice if the donation modal isn't open
+    if (!document.getElementById('donationModal').classList.contains('open')) {
+      document.body.classList.remove('has-notice');
+    }
   }
 
   function closeModalOutside(e) {
