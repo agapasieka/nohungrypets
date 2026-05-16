@@ -727,6 +727,11 @@
           <div class="stat-label">Your neighbourhood</div>
         </div>
       </div>
+      <div class="hero-donate">
+        <p style="text-align:center; margin-top:2rem; font-size:0.94rem; color:var(--brown-mid); max-width:480px;">
+          Have larger donations? <a href="#" onclick="openDonationModal()" style="color:var(--orange); text-decoration:underline;">Find local pet food banks & shelters</a> to contribute bigger items.
+        </p>
+      </div>
     </div>
 
     <div class="hero-visual">
@@ -959,6 +964,22 @@
   </div>
 </div>
 
+<!-- MODAL: Donation Centers -->
+<div class="modal-overlay" id="donationModal" onclick="closeDonationModalOutside(event)">
+  <div class="modal" style="max-width: 500px;">
+    <button class="modal-close" onclick="closeDonationModal()">✕</button>
+    <h2>Find Local Pet Food Banks & Shelters</h2>
+    <p>Donate larger quantities of pet food to these organizations in your area.</p>
+    <div class="form-group">
+      <label>Search by postcode or city</label>
+      <input type="text" id="donation-search-input" placeholder="Enter your postcode or city..." oninput="filterDonationCenters()"/>
+    </div>
+    <div id="donation-results">
+      <p style="text-align:center; color:var(--muted); padding:2rem;">Loading local organizations...</p>
+    </div>
+  </div>
+</div>
+
 <script>
   function openModal(type) {
     event && event.preventDefault();
@@ -1014,7 +1035,79 @@
     document.getElementById('form-login').style.display = type === 'login' ? 'block' : 'none';
   }
 
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeDonationModal(); } });
+
+  // Donation Modal Functions
+  function openDonationModal() {
+    document.getElementById('donationModal').classList.add('open');
+    document.body.classList.add('has-notice');
+    loadDonationCenters();
+  }
+
+  function closeDonationModal() {
+    document.getElementById('donationModal').classList.remove('open');
+    // Only remove has-notice if the site notice isn't open
+    if (!document.getElementById('modal').classList.contains('open')) {
+      document.body.classList.remove('has-notice');
+    }
+  }
+
+  function closeDonationModalOutside(e) {
+    if (e.target === document.getElementById('donationModal')) closeDonationModal();
+  }
+
+  // Mock donation centers data - in a real app, this would come from an API or database
+  const donationCenters = [
+    { name: "Burton Animal Shelter", address: "123 Animal Care Ln, Burton upon Trent", postcode: "DE14 2FG", phone: "01283 123456", website: "burtonanimalshelter.org.uk" },
+    { name: "East Staffordshire Pet Food Bank", address: "456 Charity Way, Barton under Needwood", postcode: "DE13 8JH", phone: "01283 654321", website: "espfb.org.uk" },
+    { name: "RSPCA Burton & District", address: "789 Rescue Rd, Burton upon Trent", postcode: "DE13 0AA", phone: "01283 789012", website: "rspca.org.uk/burton" },
+    { name: "PDSA PetAid Hospital", address: "321 Veterinary Ave, Derby", postcode: "DE1 3GZ", phone: "0800 731 2502", website: "pdsa.org.uk" },
+    { name: "Blue Cross Rehoming Centre", address: "654 Adoption Ln, Coventry", postcode: "CV6 4BU", phone: "0300 777 1897", website: "bluecross.org.uk" }
+  ];
+
+  function loadDonationCenters() {
+    const resultsDiv = document.getElementById('donation-results');
+    resultsDiv.innerHTML = donationCenters.map(center => `
+      <div style="background:white; border-radius:12px; padding:1.5rem; margin-bottom:1rem; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+        <h3 style="color:var(--brown); margin-bottom:0.5rem;">${center.name}</h3>
+        <p style="color:var(--muted); margin-bottom:0.5rem;"><strong>Address:</strong> ${center.address}</p>
+        <p style="color:var(--muted); margin-bottom:0.5rem;"><strong>Postcode:</strong> ${center.postcode}</p>
+        <p style="color:var(--muted); margin-bottom:0.5rem;"><strong>Phone:</strong> ${center.phone}</p>
+        <p style="color:var(--muted); margin-bottom:0.5rem;"><strong>Website:</strong> <a href="https://${center.website}" target="_blank" style="color:var(--orange); text-decoration:none;">${center.website}</a></p>
+      </div>
+    `).join('');
+  }
+
+  function filterDonationCenters() {
+    const searchTerm = document.getElementById('donation-search-input').value.toLowerCase();
+    const resultsDiv = document.getElementById('donation-results');
+
+    if (!searchTerm) {
+      loadDonationCenters();
+      return;
+    }
+
+    const filtered = donationCenters.filter(center =>
+      center.name.toLowerCase().includes(searchTerm) ||
+      center.address.toLowerCase().includes(searchTerm) ||
+      center.postcode.toLowerCase().includes(searchTerm)
+    );
+
+    if (filtered.length === 0) {
+      resultsDiv.innerHTML = '<p style="text-align:center; color:var(--muted); padding:2rem;">No donation centers found matching your search.</p>';
+      return;
+    }
+
+    resultsDiv.innerHTML = filtered.map(center => `
+      <div style="background:white; border-radius:12px; padding:1.5rem; margin-bottom:1rem; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+        <h3 style="color:var(--brown); margin-bottom:0.5rem;">${center.name}</h3>
+        <p style="color:var(--muted); margin-bottom:0.5rem;"><strong>Address:</strong> ${center.address}</p>
+        <p style="color:var(--muted); margin-bottom:0.5rem;"><strong>Postcode:</strong> ${center.postcode}</p>
+        <p style="color:var(--muted); margin-bottom:0.5rem;"><strong>Phone:</strong> ${center.phone}</p>
+        <p style="color:var(--muted); margin-bottom:0.5rem;"><strong>Website:</strong> <a href="https://${center.website}" target="_blank" style="color:var(--orange); text-decoration:none;">${center.website}</a></p>
+      </div>
+    `).join('');
+  }
 </script>
 
 <script

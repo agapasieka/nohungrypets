@@ -363,9 +363,8 @@
   async function loadListings() {
     try {
       const snap = await db.collection('listings')
-        .where('status', '==', 'available')
         .get();
-        
+
       allListings = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       allListings.sort((a, b) => {
         const ta = a.createdAt ? a.createdAt.toMillis() : 0;
@@ -444,12 +443,35 @@
 
       const animalTags = l.animals ? l.animals.map(a => `<span class="animal-tag">${a}</span>`).join('') : '';
 
+      let badgeText = 'Available';
+      let badgeClass = 'badge-available';
+      let claimBtnText = 'Claim →';
+      let claimBtnClass = 'btn-claim';
+      let claimBtnDisabled = '';
+      let claimBtnOnClick = 'onclick="claimListing(event,this)"';
+
+      if (l.status === 'claimed') {
+        badgeText = 'Claimed';
+        badgeClass = 'badge-gone';
+        claimBtnText = '✓ Claimed!';
+        claimBtnClass = 'btn-claimed';
+        claimBtnDisabled = 'disabled';
+        claimBtnOnClick = '';
+      } else if (l.status === 'archived') {
+        badgeText = 'Archived';
+        badgeClass = 'badge-gone';
+        claimBtnText = 'Claimed';
+        claimBtnClass = 'btn-claimed';
+        claimBtnDisabled = 'disabled';
+        claimBtnOnClick = '';
+      }
+
       return `
-        <a href="#" class="listing-card" onclick="claimListing(event,this)">
+        <a href="#" class="listing-card" ${claimBtnOnClick}>
           <div class="listing-card-img ${bgClass}">
             ${imgContent}
             <div class="listing-badge-wrap">
-              <span class="badge-available">Available</span>
+              <span class="${badgeClass}">${badgeText}</span>
             </div>
           </div>
           <div class="listing-card-content">
@@ -466,7 +488,7 @@
                 <div class="user-avatar ${avClass}">${l.posterName ? l.posterName.charAt(0).toUpperCase() : '?'}</div>
                 <span class="user-name">${l.posterName || 'Guest'}</span>
               </div>
-              <button class="btn-claim">Claim →</button>
+              <button class="${claimBtnClass}" ${claimBtnDisabled}>${claimBtnText}</button>
             </div>
           </div>
         </a>
@@ -526,15 +548,29 @@
     const badge = card.querySelector('.badge-available');
     if (badge) { badge.textContent = 'Claimed'; badge.className = 'badge-gone'; }
 
-    // Increment claims count in Firestore
+    // Update listing status to claimed and increment user's claims count
     try {
+      // Update the listing document to mark as claimed
+      await db.collection('listings').doc(l.id).update({
+        status: 'claimed',
+        claimedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      // Increment user's claims count
       await db.collection('users').doc(user.uid).update({
         claims: firebase.firestore.FieldValue.increment(1)
       });
       showToast('🐾 Listing claimed! The owner will be in touch.', 'success');
     } catch (err) {
       console.error('Claim update failed:', err);
-      showToast('🐾 Listing claimed! The owner will be in touch.', 'success');
+      showToast('Error claiming listing. Please try again.', 'error');
+
+      // Revert UI changes on error
+      btn.textContent = 'Claim →';
+      btn.className = 'btn-claim';
+      btn.disabled = false;
+      const badge = card.querySelector('.badge-gone');
+      if (badge) { badge.textContent = 'Available'; badge.className = 'badge-available'; }
     }
   }
 
