@@ -602,7 +602,8 @@
               <div class="my-listing-meta">${data.category || 'Item'} · Posted ${time} · <span class="status-span" style="color:${statusColor};font-weight:600">${statusText}</span></div>
             </div>
             <div class="my-listing-actions">
-              ${data.status === 'available' ? `<button class="btn-sm btn-sm-edit" onclick="markClaimed('${doc.id}', this)">Mark Claimed</button>` : ''}
+              ${data.status === 'available' ? `<button class="btn-sm btn-sm-edit" onclick="markClaimed('${doc.id}', this)">Mark Claimed</button>` :
+      data.status === 'claimed' ? `<button class="btn-sm btn-sm-edit" onclick="revertClaimed('${doc.id}', this)">Revert to Available</button>` : ''}
               <button class="btn-sm btn-sm-delete" onclick="deleteListing('${doc.id}', this)">Delete</button>
             </div>
           `;
@@ -696,11 +697,11 @@
     btn.textContent = 'Updating...';
     try {
       const docRef = db.collection('listings').doc(id);
-      await docRef.update({ 
-        status: 'claimed', 
-        claimedAt: firebase.firestore.FieldValue.serverTimestamp() 
+      await docRef.update({
+        status: 'claimed',
+        claimedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-      
+
       showToast('Listing marked as claimed!', 'success');
       const span = btn.parentElement.previousElementSibling.querySelector('.status-span');
       span.style.color = 'var(--orange)';
@@ -711,6 +712,32 @@
       showToast('Error updating listing.', 'error');
       btn.disabled = false;
       btn.textContent = 'Mark Claimed';
+    }
+  }
+
+  // ── REVERT CLAIMED TO AVAILABLE ────────────────────────
+  async function revertClaimed(id, btn) {
+    if (!confirm('Revert this listing to available?')) return;
+    btn.disabled = true;
+    btn.textContent = 'Updating...';
+    try {
+      const docRef = db.collection('listings').doc(id);
+      await docRef.update({
+        status: 'available'
+      });
+
+      showToast('Listing reverted to available!', 'success');
+      const span = btn.parentElement.previousElementSibling.querySelector('.status-span');
+      span.style.color = 'var(--green)';
+      span.textContent = 'Available';
+
+      // Replace the button with Mark Claimed button
+      btn.outerHTML = `<button class="btn-sm btn-sm-edit" onclick="markClaimed('${id}', this)">Mark Claimed</button>`;
+    } catch(e) {
+      console.error(e);
+      showToast('Error updating listing.', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Revert to Available';
     }
   }
 
