@@ -307,21 +307,27 @@
       <input type="text" id="pickup" placeholder="e.g. Doorstep collection · Message me first"/>
     </div>
 
-    <span class="form-section-title">👤 Your details</span>
-    <div class="form-row">
-      <div class="form-group">
-        <label for="poster-name">Your first name *</label>
-        <input type="text" id="poster-name" placeholder="e.g. Sarah"/>
+    <div id="guest-details-section">
+      <span class="form-section-title">👤 Your details (to create your free account)</span>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="poster-name">Your first name *</label>
+          <input type="text" id="poster-name" placeholder="e.g. Sarah"/>
+        </div>
+        <div class="form-group">
+          <label for="poster-email">Contact email *</label>
+          <input type="email" id="poster-email" placeholder="you@example.com"/>
+        </div>
       </div>
-      <div class="form-group">
-        <label for="poster-email">Contact email *</label>
-        <input type="email" id="poster-email" placeholder="you@example.com"/>
+      <div class="form-group" style="margin-top:1rem;">
+        <label for="poster-password">Choose a password *</label>
+        <input type="password" id="poster-password" placeholder="At least 6 characters (so you can manage your listing)"/>
       </div>
     </div>
 
-    <div class="terms-row">
+    <div class="terms-row" style="margin-top:1.5rem;">
       <input type="checkbox" id="post-terms"/>
-      <span>I agree to the <a href="#">community guidelines</a> and confirm this item is safe for animals</span>
+      <span>I agree to the <a href="terms.html" target="_blank">terms of service</a>, <a href="guidelines.html" target="_blank">community guidelines</a>, and to create a free account.</span>
     </div>
 
     <button class="btn-submit" onclick="submitListing()">
@@ -487,39 +493,81 @@
   function handleDragLeave() { document.getElementById('upload-zone').classList.remove('dragover'); }
   function handleDrop(e) { e.preventDefault(); handleFiles(e.dataTransfer.files); handleDragLeave(); }
 
-  async function submitListing() {
-    const user = firebase.auth().currentUser;
-    if (!user) {
-      showToast('You must be logged in to post!', 'error');
-      setTimeout(() => window.location.href = 'login.html', 1500);
-      return;
+  let isUserLoggedIn = false;
+  let cachedUserDoc = null;
+
+  auth.onAuthStateChanged(async (user) => {
+    isUserLoggedIn = !!user;
+    if (user) {
+      document.getElementById('guest-details-section').style.display = 'none';
+      try {
+        const doc = await db.collection('users').doc(user.uid).get();
+        if (doc.exists) cachedUserDoc = doc.data();
+      } catch (e) {}
+    } else {
+      document.getElementById('guest-details-section').style.display = 'block';
+      cachedUserDoc = null;
     }
+  });
+
+  async function submitListing() {
+    let user = firebase.auth().currentUser;
 
     const name   = document.getElementById('item-name').value.trim();
     const category = document.getElementById('item-category').value;
     const condition = document.getElementById('item-condition').value;
     const desc   = document.getElementById('item-desc').value.trim();
-    const poster = document.getElementById('poster-name').value.trim();
-    const email  = document.getElementById('poster-email').value.trim();
     const post   = document.getElementById('postcode').value.trim().toUpperCase();
     const pickup = document.getElementById('pickup').value.trim();
     const terms  = document.getElementById('post-terms').checked;
-    
     const animals = [...document.querySelectorAll('.animal-btn.selected')].map(b => b.textContent.replace(/[^\w\s]/gi, '').trim());
+
+    let poster = '', email = '', password = '';
+
+    if (!isUserLoggedIn) {
+      poster = document.getElementById('poster-name').value.trim();
+      email  = document.getElementById('poster-email').value.trim();
+      password = document.getElementById('poster-password').value;
+      if (!poster) return showToast('Please enter your name!', 'error');
+      if (!email)  return showToast('Please enter your email!', 'error');
+      if (!password || password.length < 6) return showToast('Password must be at least 6 characters!', 'error');
+    } else {
+      poster = user.displayName || (cachedUserDoc ? cachedUserDoc.name : 'A member');
+      email = user.email;
+    }
 
     if (!name)   return showToast('Please add an item name!', 'error');
     if (!category) return showToast('Please select a category!', 'error');
-    if (!poster) return showToast('Please enter your name!', 'error');
-    if (!email)  return showToast('Please enter your email!', 'error');
     if (!post)   return showToast('Please enter your postcode!', 'error');
-    if (!terms)  return showToast('Please agree to the community guidelines!', 'error');
+    if (!terms)  return showToast('Please agree to the community guidelines and account creation!', 'error');
 
     const btn = document.querySelector('.btn-submit');
     const origText = btn.innerHTML;
-    btn.innerHTML = '🐾 Uploading...';
+    btn.innerHTML = isUserLoggedIn ? '🐾 Uploading...' : '🐾 Creating account...';
     btn.disabled = true;
 
     try {
+      // 1. Create account if guest
+      if (!isUserLoggedIn) {
+        try {
+          const result = await auth.createUserWithEmailAndPassword(email, password);
+          user = result.user;
+          await user.updateProfile({ displayName: poster });
+          await db.collection('users').doc(user.uid).set({
+            name: poster, email, postcode: post, ownedAnimals: [],
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            listings: 0, claims: 0
+          });
+          isUserLoggedIn = true;
+        } catch (authErr) {
+          btn.innerHTML = origText;
+          btn.disabled = false;
+          if (authErr.code === 'auth/email-already-in-use') {
+            return showToast('This email is already registered. Please log in first!', 'error');
+          }
+          return showToast(authErr.message || 'Error creating account.', 'error');
+        }
+      }
       const imageUrls = [];
       const cloudName = 'dyfrrqxfr';
       const uploadPreset = 'iev7fjfi';
