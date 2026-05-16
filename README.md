@@ -44,10 +44,10 @@ Here is a diagram illustrating the signup process and how it integrates with Fir
 flowchart TD
     A[User opens NoHungryPets] --> B{Create free account}
     B --> C[Signup Modal Opens]
-    C --> D[User fills details: Name, Email, Postcode, Password]
+    C --> D[User fills details: Name, Email, Postcode, Owned Animals, Password]
     D --> E{Clicks Create Account}
     E --> F[Firebase Auth: Create User]
-    F -->|Success| G[Firestore: Save user profile & postcode]
+    F -->|Success| G[Firestore: Save user profile, postcode, & animals]
     G --> H[User is Logged In]
     F -->|Error| I[Display Error Message]
 ```
