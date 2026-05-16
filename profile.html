@@ -548,7 +548,7 @@
     listingsContainer.innerHTML = '<p style="padding:1rem;color:var(--muted)">Loading listings...</p>';
     
     try {
-      const snapshot = await db.collection('listings').where('userId', '==', user.uid).orderBy('createdAt', 'desc').get();
+      const snapshot = await db.collection('listings').where('userId', '==', user.uid).get();
       listingsContainer.innerHTML = '';
       
       if (snapshot.empty) {
@@ -556,7 +556,13 @@
       } else {
         const animalEmojis = { 'Dog':'🦴','Cat':'🐟','Rabbit':'🥬','Small pets':'🌾','Bird':'🐦','Reptile':'🦎','Fish':'🐟','Horse':'🌿','Farm animal':'🌿' };
         
-        snapshot.forEach(doc => {
+        const docs = snapshot.docs.sort((a, b) => {
+          const ta = a.data().createdAt ? a.data().createdAt.toMillis() : 0;
+          const tb = b.data().createdAt ? b.data().createdAt.toMillis() : 0;
+          return tb - ta;
+        });
+
+        docs.forEach(doc => {
           const data = doc.data();
           let statusColor = 'var(--green)';
           let statusText = 'Available';
