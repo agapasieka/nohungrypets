@@ -531,6 +531,7 @@
   }
 
   async function claimListing(e, card) {
+    console.log('claimListing function called!');
     e.preventDefault();
     const listingElement = card.closest('.listing-card');
     if (!listingElement) return;
