@@ -18,9 +18,21 @@ service cloud.firestore {
     match /listings/{listingId} {
       allow read: if true; // Publicly readable
 
-      // Only Listing owner can write/delete
-      allow create, update, delete: if request.auth != null
-                                  && request.auth.uid == resource.data.userId;
+      // Only Listing owner can write/delete (except for claiming)
+      allow create, delete: if request.auth != null
+                            && request.auth.uid == resource.data.userId;
+
+      // Allow updating listings: owner can modify any field,
+      // any authenticated user can claim (update status to claimed)
+      allow update: if request.auth != null
+                    && (
+                      // Owner can update any field
+                      request.auth.uid == resource.data.userId
+                      // OR any authenticated user can claim the listing
+                      || (request.resource.data.keys().hasOnly(['status', 'claimedAt'])
+                          && request.resource.data.status == 'claimed'
+                          && request.resource.data.claimedAt != null)
+                    );
 
       // For creating new listings, userId must match authenticated user
       allow create: if request.auth != null
