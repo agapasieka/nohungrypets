@@ -701,7 +701,13 @@
     document.getElementById('header-name').textContent = (user.displayName || 'there').split(' ')[0];
 
     // Get extra data from Firestore
-    const profile = await getUserProfile(user.uid);
+    let profile = null;
+    try {
+      profile = await getUserProfile(user.uid);
+    } catch (err) {
+      console.error('Error loading user profile:', err);
+      // Show error state but continue with basic auth data
+    }
     if (profile) {
       document.getElementById('profile-location').textContent = profile.postcode ? '📍 ' + profile.postcode : '📍 Location not set';
       document.getElementById('stat-listings').textContent = profile.listings || 0;
@@ -713,14 +719,14 @@
       document.getElementById('settings-name-view').textContent = profile.name || user.displayName || '—';
       document.getElementById('settings-email-view').textContent = profile.email || user.email;
       document.getElementById('settings-postcode-view').textContent = profile.postcode || 'Not set';
-      
+
       const owned = profile.ownedAnimals || [];
       document.getElementById('settings-animals-view').textContent = owned.length ? owned.join(', ') : 'None';
 
       // Pre-fill edit form
       document.getElementById('edit-name').value = profile.name || '';
       document.getElementById('edit-postcode').value = profile.postcode || '';
-      
+
       // Pre-select animal chips
       document.querySelectorAll('#edit-animals .animal-btn').forEach(btn => {
         if (owned.includes(btn.textContent.trim())) {
@@ -733,6 +739,26 @@
       if (owned.length === 0 && document.querySelectorAll('#edit-animals .animal-btn.selected').length === 0) {
         document.querySelector('#edit-animals .animal-btn').classList.add('selected'); // Select 'None'
       }
+    } else {
+      // Fallback to basic auth data if profile not available
+      document.getElementById('profile-location').textContent = '📍 Location not set';
+      document.getElementById('stat-listings').textContent = '0';
+      document.getElementById('stat-claims').textContent = '0';
+      document.getElementById('impact-listings').textContent = '0';
+      document.getElementById('impact-claimed').textContent = '0';
+
+      // Settings view
+      document.getElementById('settings-name-view').textContent = user.displayName || '—';
+      document.getElementById('settings-email-view').textContent = user.email;
+      document.getElementById('settings-postcode-view').textContent = 'Not set';
+      document.getElementById('settings-animals-view').textContent = 'None';
+
+      // Pre-fill edit form
+      document.getElementById('edit-name').value = user.displayName || '';
+      document.getElementById('edit-postcode').value = '';
+
+      // Select 'None' by default
+      document.querySelector('#edit-animals .animal-btn').classList.add('selected');
     }
 
     // Load User Listings
@@ -803,9 +829,9 @@
         });
       }
     } catch(err) {
-      console.error(err);
-      // Fallback if index isn't built yet
-      listingsContainer.innerHTML = '<p style="padding:1rem;color:var(--orange)">Error loading listings. If you just created the database, the index might still be building.</p>';
+      console.error('Error loading listings:', err);
+      // Fallback if index isn't built yet or other Firestore issues
+      listingsContainer.innerHTML = '<p style="padding:1rem;color:var(--orange)">Error loading listings. Please check your connection and try again.</p>';
     }
 
     const joined = user.metadata.creationTime
@@ -998,8 +1024,15 @@
   }
 
   // ── LOGOUT ─────────────────────────────────────────────
-  function handleLogout() {
-    if (confirm('Log out of NoHungryPets?')) logOut();
+  async function handleLogout() {
+    if (confirm('Log out of NoHungryPets?')) {
+      try {
+        await logOut();
+      } catch (err) {
+        console.error('Logout error:', err);
+        showToast('Logout failed. Please try again.', 'error');
+      }
+    }
   }
 
 
@@ -1080,7 +1113,7 @@
       const isCurrentUser = msg.senderId === currentUserId;
 
       return `
-        <div class="message-item ${isCurrentUser ? 'message-sent' : message-received'}">
+        <div class="message-item ${isCurrentUser ? 'message-sent' : 'message-received'}">
           <div class="message-content">
             ${msg.text}
           </div>
