@@ -968,6 +968,12 @@
 
       // Send automatic message to owner via messaging system
       try {
+        console.log('Attempting to send automatic message...');
+        console.log('Claimant ID:', claimantId);
+        console.log('Owner ID:', ownerId);
+        console.log('Listing ID:', id);
+        console.log('Item name:', data.itemName || 'Untitled Item');
+
         // Get or create conversation between claimant and owner
         const conversationId = await window.messaging.getOrCreateConversation(
           claimantId,
@@ -976,6 +982,8 @@
           data.itemName || 'Untitled Item'
         );
 
+        console.log('Conversation ID:', conversationId);
+
         // Send automatic message from claimant to owner
         await window.messaging.sendMessage(
           conversationId,
@@ -983,9 +991,11 @@
           `Hi! I've claimed your "${data.itemName || 'item'}". Could we arrange a time for collection?`
         );
 
+        console.log('Automatic message sent successfully');
         showToast('Listing claimed! Message sent to owner.', 'success');
       } catch (messagingError) {
         console.error('Error sending automatic message:', messagingError);
+        console.error('Messaging error details:', messagingError);
         // Still show success for claiming, but warn about message
         showToast('Listing claimed! Could not send automatic message.', 'warning');
       }
