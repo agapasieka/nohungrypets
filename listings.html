@@ -562,6 +562,16 @@
 
     // Update listing status to claimed and increment user's claims count
     try {
+      // Get the listing data first to get owner info and item name
+      const listingDoc = await db.collection('listings').doc(listingId).get();
+      if (!listingDoc.exists) {
+        throw new Error('Listing not found');
+      }
+
+      const listingData = listingDoc.data();
+      const ownerId = listingData.userId; // Owner's user ID
+      const itemName = listingData.itemName || 'Untitled Item';
+
       // Update the listing document to mark as claimed
       await db.collection('listings').doc(listingId).update({
         status: 'claimed',
@@ -572,7 +582,40 @@
       await db.collection('users').doc(user.uid).update({
         claims: firebase.firestore.FieldValue.increment(1)
       });
-      showToast('🐾 Listing claimed! The owner will be in touch.', 'success');
+
+      // Send automatic message to owner via messaging system
+      try {
+        console.log('Attempting to send automatic message from listings.html...');
+        console.log('Claimant ID:', user.uid);
+        console.log('Owner ID:', ownerId);
+        console.log('Listing ID:', listingId);
+        console.log('Item name:', itemName);
+
+        // Get or create conversation between claimant and owner
+        const conversationId = await window.messaging.getOrCreateConversation(
+          user.uid,
+          ownerId,
+          listingId,
+          itemName
+        );
+
+        console.log('Conversation ID:', conversationId);
+
+        // Send automatic message from claimant to owner
+        await window.messaging.sendMessage(
+          conversationId,
+          user.uid,
+          `Hi! I've claimed your "${itemName}". Could we arrange a time for collection?`
+        );
+
+        console.log('Automatic message sent successfully');
+        showToast('🐾 Listing claimed! Message sent to owner.', 'success');
+      } catch (messagingError) {
+        console.error('Error sending automatic message:', messagingError);
+        console.error('Messaging error details:', messagingError);
+        // Still show success for claiming, but warn about message
+        showToast('🐾 Listing claimed! Could not send automatic message.', 'warning');
+      }
     } catch (err) {
       console.error('Claim update failed:', err);
       showToast('Error claiming listing. Please try again.', 'error');
