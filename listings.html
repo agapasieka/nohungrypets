@@ -593,24 +593,34 @@
         console.log('Item name:', itemName);
 
         // Get or create conversation between claimant and owner
-        const conversationId = await window.messaging.getOrCreateConversation(
-          user.uid,
-          ownerId,
-          listingId,
-          itemName
-        );
+        try {
+          console.log('Calling getOrCreateConversation...');
+          const conversationId = await window.messaging.getOrCreateConversation(
+            user.uid,
+            ownerId,
+            listingId,
+            itemName
+          );
+          console.log('getOrCreateConversation succeeded, Conversation ID:', conversationId);
 
-        console.log('Conversation ID:', conversationId);
-
-        // Send automatic message from claimant to owner
-        await window.messaging.sendMessage(
-          conversationId,
-          user.uid,
-          `Hi! I've claimed your "${itemName}". Could we arrange a time for collection?`
-        );
-
-        console.log('Automatic message sent successfully');
-        showToast('🐾 Listing claimed! Message sent to owner.', 'success');
+          // Send automatic message from claimant to owner
+          try {
+            console.log('Calling sendMessage...');
+            await window.messaging.sendMessage(
+              conversationId,
+              user.uid,
+              `Hi! I've claimed your "${itemName}". Could we arrange a time for collection?`
+            );
+            console.log('sendMessage succeeded');
+            showToast('🐾 Listing claimed! Message sent to owner.', 'success');
+          } catch (sendError) {
+            console.error('Error in sendMessage:', sendError);
+            showToast('🐾 Listing claimed! Could not send message.', 'warning');
+          }
+        } catch (convError) {
+          console.error('Error in getOrCreateConversation:', convError);
+          showToast('🐾 Listing claimed! Could not create conversation.', 'warning');
+        }
       } catch (messagingError) {
         console.error('Error sending automatic message:', messagingError);
         console.error('Messaging error details:', messagingError);
