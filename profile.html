@@ -944,12 +944,52 @@
     btn.textContent = 'Updating...';
     try {
       const docRef = db.collection('listings').doc(id);
+      const doc = await docRef.get();
+
+      if (!doc.exists) {
+        throw new Error('Listing not found');
+      }
+
+      const data = doc.data();
+      const ownerId = data.userId; // Owner's user ID
+      const currentUser = firebase.auth().currentUser;
+
+      if (!currentUser) {
+        throw new Error('User not authenticated');
+      }
+
+      const claimantId = currentUser.uid; // Claimant's user ID
+
+      // Update listing status
       await docRef.update({
         status: 'claimed',
         claimedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
 
-      showToast('Listing marked as claimed!', 'success');
+      // Send automatic message to owner via messaging system
+      try {
+        // Get or create conversation between claimant and owner
+        const conversationId = await window.messaging.getOrCreateConversation(
+          claimantId,
+          ownerId,
+          id,
+          data.itemName || 'Untitled Item'
+        );
+
+        // Send automatic message from claimant to owner
+        await window.messaging.sendMessage(
+          conversationId,
+          claimantId,
+          `Hi! I've claimed your "${data.itemName || 'item'}". Could we arrange a time for collection?`
+        );
+
+        showToast('Listing claimed! Message sent to owner.', 'success');
+      } catch (messagingError) {
+        console.error('Error sending automatic message:', messagingError);
+        // Still show success for claiming, but warn about message
+        showToast('Listing claimed! Could not send automatic message.', 'warning');
+      }
+
       const span = btn.parentElement.previousElementSibling.querySelector('.status-span');
       span.style.color = 'var(--orange)';
       span.textContent = 'Claimed (Auto-archives in 24h)';
