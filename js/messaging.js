@@ -95,8 +95,16 @@ async function sendMessage(conversationId, senderId, text) {
       const otherParticipantId = participants.find(id => id !== senderId);
 
       if (otherParticipantId) {
+        // Get current unreadCount
+        const data = conversationDoc.data();
+        const unreadCount = data.unreadCount || {};
+
+        // Increment the count for the other participant
+        unreadCount[otherParticipantId] = (unreadCount[otherParticipantId] || 0) + 1;
+
+        // Update the entire unreadCount object
         await db.collection('conversations').doc(conversationId).update({
-          [`unreadCount.${otherParticipantId}`]: firebase.firestore.FieldValue.increment(1)
+          unreadCount: unreadCount
         });
       }
     }
