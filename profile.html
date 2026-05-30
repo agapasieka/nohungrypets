@@ -1101,209 +1101,119 @@ let currentUserId = null;
 
   // Render conversations list
   function renderConversationsList(conversations) {
-  const list = document.getElementById('conversations-list');
-  if (!list) return;
+    const list = document.getElementById('conversations-list');
+    if (!list) return;
 
-  if (conversations.length === 0) {
-    list.innerHTML = '<p style="padding:1rem;color:var(--muted)">No messages yet. When someone claims your listing, a conversation will start automatically.</p>';
-    return;
-  }
-
-  list.innerHTML = conversations.map(conv => {
-    const otherUserId = conv.participants.find(id => id !== currentUserId);
-    const unread = conv.unreadCount?.[currentUserId] || 0;
-    const lastUpdated = conv.lastUpdated?.toDate
-      ? conv.lastUpdated.toDate().toLocaleDateString('en-GB', { day:'numeric', month:'short' })
-      : '';
-
-    return `
-      <div class="conversation-item" onclick="openConversation('${conv.id}', '${conv.relatedListingName || 'Conversation'}')">
-        <div class="conversation-header">
-          <h4>${conv.relatedListingName || 'Conversation'}</h4>
-          <p class="conversation-last-message">${conv.lastMessage || 'No messages yet'}</p>
-        </div>
-        <div class="conversation-meta">
-          <span class="conversation-time">${lastUpdated}</span>
-          ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-function updateUnreadBadge() {
-  const list = document.getElementById('conversations-list');
-  if (!list) return;
-  const badges = list.querySelectorAll('.unread-badge');
-  const total = [...badges].reduce((sum, b) => sum + parseInt(b.textContent || '0'), 0);
-  document.getElementById('messages-badge').textContent = total > 0 ? total : '0';
-}
-
-function openConversation(conversationId, title) {
-  currentConversationId = conversationId;
-  document.getElementById('conversation-title').textContent = title;
-  document.getElementById('conversations-list').style.display = 'none';
-  document.getElementById('conversation-view').style.display = 'flex';
-
-  if (messagesUnsubscribe) messagesUnsubscribe();
-
-  messagesUnsubscribe = window.messaging.subscribeToMessages(conversationId, (messages) => {
-    const container = document.getElementById('messages-container');
-    if (messages.length === 0) {
-      container.innerHTML = '<p style="padding:1rem;color:var(--muted);text-align:center">No messages yet.</p>';
+    if (conversations.length === 0) {
+      list.innerHTML = '<p style="padding:1rem;color:var(--muted)">No messages yet. When someone claims your listing, a conversation will start automatically.</p>';
       return;
     }
-    container.innerHTML = messages.map(msg => {
-      const isSent = msg.senderId === currentUserId;
-      const time = msg.timestamp?.toDate
-        ? msg.timestamp.toDate().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })
+
+    list.innerHTML = conversations.map(conv => {
+      const unread = conv.unreadCount?.[currentUserId] || 0;
+      const lastUpdated = conv.lastUpdated?.toDate
+        ? conv.lastUpdated.toDate().toLocaleDateString('en-GB', { day:'numeric', month:'short' })
         : '';
       return `
-        <div class="message-item ${isSent ? 'message-sent' : 'message-received'}">
-          <div>
-            <div class="message-content">${msg.text}</div>
-            <div class="message-meta">${time}</div>
+        <div class="conversation-item" onclick="openConversation('${conv.id}', '${conv.relatedListingName || 'Conversation'}')">
+          <div class="conversation-header">
+            <h4>${conv.relatedListingName || 'Conversation'}</h4>
+            <p class="conversation-last-message">${conv.lastMessage || 'No messages yet'}</p>
+          </div>
+          <div class="conversation-meta">
+            <span class="conversation-time">${lastUpdated}</span>
+            ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
           </div>
         </div>
       `;
     }).join('');
-    container.scrollTop = container.scrollHeight;
-  });
-
-  window.messaging.markMessagesAsRead(conversationId, currentUserId).catch(console.error);
-
-  document.getElementById('message-form').onsubmit = async (e) => {
-  e.preventDefault();
-  const input = document.getElementById('message-input');
-  const text = input.value.trim();
-  if (!text) return;
-  input.value = '';
-  try {
-    const user = firebase.auth().currentUser;
-    if (!user) {
-      showToast('Please log in to send messages.', 'error');
-      return;
-    }
-    await window.messaging.sendMessage(conversationId, user.uid, text);
-  } catch (err) {
-    showToast('Could not send message. Please try again.', 'error');
   }
-};
-}
 
-function hideConversationView() {
-  document.getElementById('conversation-view').style.display = 'none';
-  document.getElementById('conversations-list').style.display = 'block';
-  if (messagesUnsubscribe) { messagesUnsubscribe(); messagesUnsubscribe = null; }
-  currentConversationId = null;
-}
+  function updateUnreadBadge() {
+    if (!currentUserId) return;
+    db.collection('conversations')
+      .where('participants', 'array-contains', currentUserId)
+      .get()
+      .then(snap => {
+        let total = 0;
+        snap.forEach(doc => {
+          const data = doc.data();
+          total += (data.unreadCount?.[currentUserId] || 0);
+        });
+        document.getElementById('messages-badge').textContent = total > 0 ? total : '0';
+      })
+      .catch(console.error);
+  }
 
-  // Open a conversation
-  async function openConversation(conversationId) {
+  function openConversation(conversationId, title) {
     currentConversationId = conversationId;
-
-    // Show conversation view, hide list
-    document.getElementById('conversation-view').style.display = 'block';
+    document.getElementById('conversation-title').textContent = title || 'Conversation';
     document.getElementById('conversations-list').style.display = 'none';
+    document.getElementById('conversation-view').style.display = 'flex';
 
-    // Clean up previous messages subscription
     if (messagesUnsubscribe) messagesUnsubscribe();
 
-    // Mark messages as read
-    await window.messaging.markMessagesAsRead(conversationId, currentUserId);
-
-    // Subscribe to messages
     messagesUnsubscribe = window.messaging.subscribeToMessages(conversationId, (messages) => {
-      renderMessagesList(messages);
+      const container = document.getElementById('messages-container');
+      if (messages.length === 0) {
+        container.innerHTML = '<p style="padding:1rem;color:var(--muted);text-align:center">No messages yet.</p>';
+        return;
+      }
+      const currentUid = firebase.auth().currentUser?.uid;
+      container.innerHTML = messages.map(msg => {
+        const isSent = msg.senderId === currentUid;
+        const time = msg.timestamp?.toDate
+          ? msg.timestamp.toDate().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })
+          : '';
+        return `
+          <div class="message-item ${isSent ? 'message-sent' : 'message-received'}">
+            <div>
+              <div class="message-content">${msg.text}</div>
+              <div class="message-meta">${time}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      container.scrollTop = container.scrollHeight;
     });
+
+    window.messaging.markMessagesAsRead(conversationId, currentUserId).catch(console.error);
+
+    document.getElementById('message-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('message-input');
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      try {
+        const user = firebase.auth().currentUser;
+        if (!user) {
+          showToast('Please log in to send messages.', 'error');
+          return;
+        }
+        await window.messaging.sendMessage(conversationId, user.uid, text);
+      } catch (err) {
+        showToast('Could not send message. Please try again.', 'error');
+      }
+    };
   }
 
-  // Hide conversation view and go back to list
   function hideConversationView() {
     document.getElementById('conversation-view').style.display = 'none';
     document.getElementById('conversations-list').style.display = 'block';
+    if (messagesUnsubscribe) { messagesUnsubscribe(); messagesUnsubscribe = null; }
     currentConversationId = null;
-
-    // Clean up messages subscription
-    if (messagesUnsubscribe) {
-      messagesUnsubscribe();
-      messagesUnsubscribe = null;
-    }
   }
 
-  // Render messages list
-  function renderMessagesList(messages) {
-    const container = document.getElementById('messages-container');
-
-    if (messages.length === 0) {
-      container.innerHTML = '<p style="padding:2rem;text-align:center;color:var(--muted)">No messages yet. Start the conversation!</p>';
-      return;
-    }
-
-    container.innerHTML = messages.map(msg => {
-      const isCurrentUser = msg.senderId === currentUserId;
-
-      return `
-        <div class="message-item ${isCurrentUser ? 'message-sent' : 'message-received'}">
-          <div class="message-content">
-            ${msg.text}
-          </div>
-          <div class="message-meta">
-            <span class="message-time">${formatTimeAgo(msg.timestamp?.toDate() || new Date())}</span>
-            ${!msg.read && !isCurrentUser ? '<span class="message-unread">●</span>' : ''}
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    // Auto-scroll to bottom
-    setTimeout(() => {
-      container.scrollTop = container.scrollHeight;
-    }, 100);
-  }
-
-  // Send message
-  document.getElementById('message-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const input = document.getElementById('message-input');
-    const text = input.value.trim();
-
-    if (!text || !currentConversationId) return;
-
-    try {
-      await window.messaging.sendMessage(currentConversationId, currentUserId, text);
-      input.value = '';
-      input.focus();
-    } catch (error) {
-      console.error('Error sending message:', error);
-      showToast('Failed to send message. Please try again.', 'error');
-    }
-  });
-
-  // Helper function to format time ago
   function formatTimeAgo(date) {
     const seconds = Math.floor((new Date() - date) / 1000);
-
-    let interval = Math.floor(seconds / 31536000);
-    if (interval > 1) return interval + " years ago";
-    interval = Math.floor(seconds / 2592000);
-    if (interval > 1) return interval + " months ago";
-    interval = Math.floor(seconds / 86400);
+    let interval = Math.floor(seconds / 86400);
     if (interval > 1) return interval + " days ago";
     interval = Math.floor(seconds / 3600);
     if (interval > 1) return interval + " hours ago";
     interval = Math.floor(seconds / 60);
     if (interval > 1) return interval + " minutes ago";
     return Math.floor(seconds) + " seconds ago";
-  }
-
-  // Update unread badge
-  function updateUnreadBadge() {
-    // This would be updated via the conversations subscription
-    // For now, we'll leave it as 0 - in a full implementation,
-    // we'd calculate total unread across all conversations
-    document.getElementById('messages-badge').textContent = '0';
   }
 </script>
 </body>
