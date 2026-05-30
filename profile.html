@@ -686,51 +686,44 @@
 <script src="js/main.js"></script>
 <script src="js/messaging.js"></script>
 <script>
-let conversationsUnsubscribe = null;
-let messagesUnsubscribe = null;
-let currentConversationId = null;
-let currentUserId = null;
+  let conversationsUnsubscribe = null;
+  let messagesUnsubscribe = null;
+  let currentConversationId = null;
+  let currentUserId = null;
+  
   // ── LOAD USER DATA ─────────────────────────────────────
   onAuthChange(async user => {
     if (!user) {
       window.location.href = 'login.html';
       return;
     }
-    // Populate from Firebase Auth
+  
     const initial = (user.displayName || user.email || '?')[0].toUpperCase();
     document.getElementById('avatar-circle').childNodes[0].textContent = initial;
     document.getElementById('profile-name').textContent = user.displayName || 'Pet lover';
     document.getElementById('profile-email').textContent = user.email;
     document.getElementById('header-name').textContent = (user.displayName || 'there').split(' ')[0];
-
-    // Get extra data from Firestore
+  
     let profile = null;
     try {
       profile = await getUserProfile(user.uid);
     } catch (err) {
       console.error('Error loading user profile:', err);
-      // Show error state but continue with basic auth data
     }
+  
     if (profile) {
       document.getElementById('profile-location').textContent = profile.postcode ? '📍 ' + profile.postcode : '📍 Location not set';
       document.getElementById('stat-listings').textContent = profile.listings || 0;
       document.getElementById('stat-claims').textContent = profile.claims || 0;
       document.getElementById('impact-listings').textContent = profile.listings || 0;
       document.getElementById('impact-claimed').textContent = profile.claims || 0;
-
-      // Settings view
       document.getElementById('settings-name-view').textContent = profile.name || user.displayName || '—';
       document.getElementById('settings-email-view').textContent = profile.email || user.email;
       document.getElementById('settings-postcode-view').textContent = profile.postcode || 'Not set';
-
       const owned = profile.ownedAnimals || [];
       document.getElementById('settings-animals-view').textContent = owned.length ? owned.join(', ') : 'None';
-
-      // Pre-fill edit form
       document.getElementById('edit-name').value = profile.name || '';
       document.getElementById('edit-postcode').value = profile.postcode || '';
-
-      // Pre-select animal chips
       document.querySelectorAll('#edit-animals .animal-btn').forEach(btn => {
         if (owned.includes(btn.textContent.trim())) {
           btn.classList.add('selected');
@@ -738,82 +731,64 @@ let currentUserId = null;
           btn.classList.remove('selected');
         }
       });
-      // Fallback if empty and no "None" selected
       if (owned.length === 0 && document.querySelectorAll('#edit-animals .animal-btn.selected').length === 0) {
-        document.querySelector('#edit-animals .animal-btn').classList.add('selected'); // Select 'None'
+        document.querySelector('#edit-animals .animal-btn').classList.add('selected');
       }
     } else {
-      // Fallback to basic auth data if profile not available
       document.getElementById('profile-location').textContent = '📍 Location not set';
       document.getElementById('stat-listings').textContent = '0';
       document.getElementById('stat-claims').textContent = '0';
       document.getElementById('impact-listings').textContent = '0';
       document.getElementById('impact-claimed').textContent = '0';
-
-      // Settings view
       document.getElementById('settings-name-view').textContent = user.displayName || '—';
       document.getElementById('settings-email-view').textContent = user.email;
       document.getElementById('settings-postcode-view').textContent = 'Not set';
       document.getElementById('settings-animals-view').textContent = 'None';
-
-      // Pre-fill edit form
       document.getElementById('edit-name').value = user.displayName || '';
       document.getElementById('edit-postcode').value = '';
-
-      // Select 'None' by default
       document.querySelector('#edit-animals .animal-btn').classList.add('selected');
     }
-
+  
     // Load User Listings
     const listingsContainer = document.querySelector('.my-listings');
     listingsContainer.innerHTML = '<p style="padding:1rem;color:var(--muted)">Loading listings...</p>';
-    
     try {
       const snapshot = await db.collection('listings').where('userId', '==', user.uid).get();
       listingsContainer.innerHTML = '';
-      
       if (snapshot.empty) {
         listingsContainer.innerHTML = '<p style="padding:1rem;color:var(--muted)">You haven\'t posted any listings yet.</p>';
       } else {
         const animalEmojis = { 'Dog':'🦴','Cat':'🐟','Rabbit':'🥬','Small pets':'🌾','Bird':'🐦','Reptile':'🦎','Fish':'🐟','Horse':'🌿','Farm animal':'🌿' };
-        
         const docs = snapshot.docs.sort((a, b) => {
           const ta = a.data().createdAt ? a.data().createdAt.toMillis() : 0;
           const tb = b.data().createdAt ? b.data().createdAt.toMillis() : 0;
           return tb - ta;
         });
-
         docs.forEach(doc => {
           const data = doc.data();
           let statusColor = 'var(--green)';
           let statusText = 'Available';
-          
           if (data.status === 'archived') {
             statusColor = 'var(--muted)';
             statusText = 'Archived';
           } else if (data.status === 'claimed') {
             statusColor = 'var(--orange)';
             statusText = 'Claimed (Auto-archives in 24h)';
-            
-            // Auto-archive check
             if (data.claimedAt) {
               const claimedTime = data.claimedAt.toDate().getTime();
               const now = Date.now();
               const hours24 = 24 * 60 * 60 * 1000;
               if (now - claimedTime > hours24) {
-                // Trigger auto-archive in background
                 autoArchiveListing(doc.id, data.imageUrls);
                 statusColor = 'var(--muted)';
                 statusText = 'Archived';
-                data.status = 'archived'; // update local state for rendering
+                data.status = 'archived';
               }
             }
           }
-          
           let animalType = data.animals && data.animals.length > 0 ? data.animals[0] : 'Other';
           const animalIcon = animalEmojis[animalType] || '📦';
           const time = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleDateString() : 'Just now';
-          
           const div = document.createElement('div');
           div.className = 'my-listing-row';
           div.innerHTML = `
@@ -824,7 +799,7 @@ let currentUserId = null;
             </div>
             <div class="my-listing-actions">
               ${data.status === 'available' ? `<button class="btn-sm btn-sm-edit" onclick="markClaimed('${doc.id}', this)">Mark Claimed</button>` :
-      data.status === 'claimed' ? `<button class="btn-sm btn-sm-edit" onclick="revertClaimed('${doc.id}', this)">Revert to Available</button>` : ''}
+              data.status === 'claimed' ? `<button class="btn-sm btn-sm-edit" onclick="revertClaimed('${doc.id}', this)">Revert to Available</button>` : ''}
               <button class="btn-sm btn-sm-delete" onclick="deleteListing('${doc.id}', this)">Delete</button>
             </div>
           `;
@@ -833,46 +808,27 @@ let currentUserId = null;
       }
     } catch(err) {
       console.error('Error loading listings:', err);
-      // Fallback if index isn't built yet or other Firestore issues
       listingsContainer.innerHTML = '<p style="padding:1rem;color:var(--orange)">Error loading listings. Please check your connection and try again.</p>';
     }
-
+  
     const joined = user.metadata.creationTime
       ? new Date(user.metadata.creationTime).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
       : 'Recently';
     document.getElementById('profile-joined').textContent = 'Member since ' + joined;
     document.getElementById('settings-joined-view').textContent = joined;
-
-    // ── MESSAGING FUNCTIONS ─────────────────────────────────────
-    let conversationsUnsubscribe = null;
-    let messagesUnsubscribe = null;
-    let currentConversationId = null;
-    let currentUserId = null;
-
-    // Initialize messaging when auth state changes
-    // Clean up existing subscriptions
+  
+    // ── MESSAGING SETUP ─────────────────────────────────────
     if (conversationsUnsubscribe) conversationsUnsubscribe();
     if (messagesUnsubscribe) messagesUnsubscribe();
-
     currentConversationId = null;
-
-    if (user) {
-      currentUserId = user.uid;
-
-      // Update unread badge - will be handled by the conversation subscription
-
-      // Subscribe to conversations
-      conversationsUnsubscribe = window.messaging.subscribeToConversations(user.uid, (conversations) => {
-        renderConversationsList(conversations);
-        updateUnreadBadge();
-      });
-    } else {
-      // User logged out
-      document.getElementById('conversations-list').innerHTML = '';
-      document.getElementById('messages-badge').textContent = '0';
-    }
+    currentUserId = user.uid;
+  
+    conversationsUnsubscribe = window.messaging.subscribeToConversations(user.uid, (conversations) => {
+      renderConversationsList(conversations);
+      updateUnreadBadge(conversations);
+    });
   });
-
+  
   // ── SECTION SWITCHING ──────────────────────────────────
   const sections = ['listings','activity','impact','messages','settings'];
   function showSection(name, el) {
@@ -884,13 +840,19 @@ let currentUserId = null;
       const sec = document.getElementById('section-' + s);
       if (sec) sec.style.display = s === name ? 'block' : 'none';
     });
-    // Impact section has two cards under one id group
     if (name === 'impact') {
       document.getElementById('section-impact').style.display = 'block';
     }
+    if (name === 'messages' && currentUserId) {
+      if (conversationsUnsubscribe) conversationsUnsubscribe();
+      conversationsUnsubscribe = window.messaging.subscribeToConversations(currentUserId, (conversations) => {
+        renderConversationsList(conversations);
+        updateUnreadBadge(conversations);
+      });
+    }
     return false;
   }
-
+  
   // ── EDIT FORM ──────────────────────────────────────────
   function toggleEditForm() {
     const form = document.getElementById('edit-form');
@@ -898,7 +860,7 @@ let currentUserId = null;
     form.classList.toggle('visible');
     view.style.display = form.classList.contains('visible') ? 'none' : 'block';
   }
-
+  
   function toggleAnimal(btn) {
     if (btn.textContent === 'None') {
       if (!btn.classList.contains('selected')) {
@@ -912,18 +874,15 @@ let currentUserId = null;
       btn.classList.toggle('selected');
     }
   }
-
+  
   async function saveProfile() {
     const user = firebase.auth().currentUser;
     if (!user) return;
     const name = document.getElementById('edit-name').value.trim();
     const postcode = document.getElementById('edit-postcode').value.trim().toUpperCase();
-    
     const ownedAnimals = [...document.querySelectorAll('#edit-animals .animal-btn.selected')]
                           .map(b => b.textContent.trim());
-                          
     if (ownedAnimals.length === 0) return showToast('Please select at least one pet option (or None).', 'error');
-
     try {
       await db.collection('users').doc(user.uid).update({ name, postcode, ownedAnimals });
       await user.updateProfile({ displayName: name });
@@ -939,7 +898,7 @@ let currentUserId = null;
       showToast('Could not save — please try again.', 'error');
     }
   }
-
+  
   // ── MARK AS CLAIMED ────────────────────────────────────
   async function markClaimed(id, btn) {
     if (!confirm('Mark this listing as claimed? It will be hidden from the map and auto-archived in 24 hours.')) return;
@@ -948,71 +907,24 @@ let currentUserId = null;
     try {
       const docRef = db.collection('listings').doc(id);
       const doc = await docRef.get();
-
-      if (!doc.exists) {
-        throw new Error('Listing not found');
-      }
-
+      if (!doc.exists) throw new Error('Listing not found');
       const data = doc.data();
-      const ownerId = data.userId; // Owner's user ID
+      const ownerId = data.userId;
       const currentUser = firebase.auth().currentUser;
-
-      if (!currentUser) {
-        throw new Error('User not authenticated');
-      }
-
-      const claimantId = currentUser.uid; // Claimant's user ID
-
-      // Update listing status
+      if (!currentUser) throw new Error('User not authenticated');
+      const claimantId = currentUser.uid;
       await docRef.update({
         status: 'claimed',
         claimedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-
-      // Send automatic message to owner via messaging system
       try {
-        console.log('Attempting to send automatic message...');
-        console.log('Claimant ID:', claimantId);
-        console.log('Owner ID:', ownerId);
-        console.log('Listing ID:', id);
-        console.log('Item name:', data.itemName || 'Untitled Item');
-
-        // Get or create conversation between claimant and owner
-        try {
-          console.log('Calling getOrCreateConversation...');
-          const conversationId = await window.messaging.getOrCreateConversation(
-            claimantId,
-            ownerId,
-            id,
-            data.itemName || 'Untitled Item'
-          );
-          console.log('getOrCreateConversation succeeded, Conversation ID:', conversationId);
-
-          // Send automatic message from claimant to owner
-          try {
-            console.log('Calling sendMessage...');
-            await window.messaging.sendMessage(
-              conversationId,
-              claimantId,
-              `Hi! I've claimed your "${data.itemName || 'item'}". Could we arrange a time for collection?`
-            );
-            console.log('sendMessage succeeded');
-            showToast('Listing claimed! Message sent to owner.', 'success');
-          } catch (sendError) {
-            console.error('Error in sendMessage:', sendError);
-            showToast('Listing claimed! Could not send message.', 'warning');
-          }
-        } catch (convError) {
-          console.error('Error in getOrCreateConversation:', convError);
-          showToast('Listing claimed! Could not create conversation.', 'warning');
-        }
-      } catch (messagingError) {
-        console.error('Error sending automatic message:', messagingError);
-        console.error('Messaging error details:', messagingError);
-        // Still show success for claiming, but warn about message
-        showToast('Listing claimed! Could not send automatic message.', 'warning');
+        const conversationId = await window.messaging.getOrCreateConversation(claimantId, ownerId, id, data.itemName || 'Untitled Item');
+        await window.messaging.sendMessage(conversationId, claimantId, `Hi! I've claimed your "${data.itemName || 'item'}". Could we arrange a time for collection?`);
+        showToast('Listing claimed! Message sent to owner.', 'success');
+      } catch (msgErr) {
+        console.error('Messaging error:', msgErr);
+        showToast('Listing claimed! Could not send message.', 'warning');
       }
-
       const span = btn.parentElement.previousElementSibling.querySelector('.status-span');
       span.style.color = 'var(--orange)';
       span.textContent = 'Claimed (Auto-archives in 24h)';
@@ -1024,24 +936,18 @@ let currentUserId = null;
       btn.textContent = 'Mark Claimed';
     }
   }
-
-  // ── REVERT CLAIMED TO AVAILABLE ────────────────────────
+  
+  // ── REVERT CLAIMED ─────────────────────────────────────
   async function revertClaimed(id, btn) {
     if (!confirm('Revert this listing to available?')) return;
     btn.disabled = true;
     btn.textContent = 'Updating...';
     try {
-      const docRef = db.collection('listings').doc(id);
-      await docRef.update({
-        status: 'available'
-      });
-
+      await db.collection('listings').doc(id).update({ status: 'available' });
       showToast('Listing reverted to available!', 'success');
       const span = btn.parentElement.previousElementSibling.querySelector('.status-span');
       span.style.color = 'var(--green)';
       span.textContent = 'Available';
-
-      // Replace the button with Mark Claimed button
       btn.outerHTML = `<button class="btn-sm btn-sm-edit" onclick="markClaimed('${id}', this)">Mark Claimed</button>`;
     } catch(e) {
       console.error(e);
@@ -1050,20 +956,17 @@ let currentUserId = null;
       btn.textContent = 'Revert to Available';
     }
   }
-
-  // ── AUTO-ARCHIVE (BACKGROUND) ──────────────────────────
+  
+  // ── AUTO-ARCHIVE ───────────────────────────────────────
   async function autoArchiveListing(id, imageUrls) {
     try {
-      const docRef = db.collection('listings').doc(id);
-      
-      // Update Firestore document (images remain in Cloudinary)
-      await docRef.update({ status: 'archived' });
+      await db.collection('listings').doc(id).update({ status: 'archived' });
       console.log(`Auto-archived listing ${id}`);
     } catch(e) {
       console.error(`Failed to auto-archive ${id}`, e);
     }
   }
-
+  
   // ── DELETE LISTING ─────────────────────────────────────
   async function deleteListing(id, btn) {
     if (!confirm('Permanently delete this listing?')) return;
@@ -1072,10 +975,7 @@ let currentUserId = null;
     try {
       const docRef = db.collection('listings').doc(id);
       const doc = await docRef.get();
-      if (doc.exists) {
-        // We delete the Firestore doc, but images remain in Cloudinary
-        await docRef.delete();
-      }
+      if (doc.exists) await docRef.delete();
       btn.closest('.my-listing-row').style.opacity = '0';
       setTimeout(() => btn.closest('.my-listing-row').remove(), 300);
       showToast('Listing deleted.', 'success');
@@ -1085,7 +985,7 @@ let currentUserId = null;
       btn.textContent = 'Delete';
     }
   }
-
+  
   // ── LOGOUT ─────────────────────────────────────────────
   async function handleLogout() {
     if (confirm('Log out of NoHungryPets?')) {
@@ -1097,18 +997,15 @@ let currentUserId = null;
       }
     }
   }
-
-
-  // Render conversations list
+  
+  // ── MESSAGING ──────────────────────────────────────────
   function renderConversationsList(conversations) {
     const list = document.getElementById('conversations-list');
     if (!list) return;
-
     if (conversations.length === 0) {
       list.innerHTML = '<p style="padding:1rem;color:var(--muted)">No messages yet. When someone claims your listing, a conversation will start automatically.</p>';
       return;
     }
-
     list.innerHTML = conversations.map(conv => {
       const unread = conv.unreadCount?.[currentUserId] || 0;
       const lastUpdated = conv.lastUpdated?.toDate
@@ -1128,31 +1025,23 @@ let currentUserId = null;
       `;
     }).join('');
   }
-
-  function updateUnreadBadge() {
-    if (!currentUserId) return;
-    db.collection('conversations')
-      .where('participants', 'array-contains', currentUserId)
-      .get()
-      .then(snap => {
-        let total = 0;
-        snap.forEach(doc => {
-          const data = doc.data();
-          total += (data.unreadCount?.[currentUserId] || 0);
-        });
-        document.getElementById('messages-badge').textContent = total > 0 ? total : '0';
-      })
-      .catch(console.error);
+  
+  function updateUnreadBadge(conversations) {
+    if (!currentUserId || !conversations) return;
+    const total = conversations.reduce((sum, conv) => {
+      return sum + (conv.unreadCount?.[currentUserId] || 0);
+    }, 0);
+    document.getElementById('messages-badge').textContent = total > 0 ? total : '0';
   }
-
+  
   function openConversation(conversationId, title) {
     currentConversationId = conversationId;
     document.getElementById('conversation-title').textContent = title || 'Conversation';
     document.getElementById('conversations-list').style.display = 'none';
     document.getElementById('conversation-view').style.display = 'flex';
-
+  
     if (messagesUnsubscribe) messagesUnsubscribe();
-
+  
     messagesUnsubscribe = window.messaging.subscribeToMessages(conversationId, (messages) => {
       const container = document.getElementById('messages-container');
       if (messages.length === 0) {
@@ -1176,9 +1065,9 @@ let currentUserId = null;
       }).join('');
       container.scrollTop = container.scrollHeight;
     });
-
+  
     window.messaging.markMessagesAsRead(conversationId, currentUserId).catch(console.error);
-
+  
     document.getElementById('message-form').onsubmit = async (e) => {
       e.preventDefault();
       const input = document.getElementById('message-input');
@@ -1197,14 +1086,14 @@ let currentUserId = null;
       }
     };
   }
-
+  
   function hideConversationView() {
     document.getElementById('conversation-view').style.display = 'none';
     document.getElementById('conversations-list').style.display = 'block';
     if (messagesUnsubscribe) { messagesUnsubscribe(); messagesUnsubscribe = null; }
     currentConversationId = null;
   }
-
+  
   function formatTimeAgo(date) {
     const seconds = Math.floor((new Date() - date) / 1000);
     let interval = Math.floor(seconds / 86400);
@@ -1215,6 +1104,6 @@ let currentUserId = null;
     if (interval > 1) return interval + " minutes ago";
     return Math.floor(seconds) + " seconds ago";
   }
-</script>
+  </script>
 </body>
 </html>
