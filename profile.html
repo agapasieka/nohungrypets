@@ -871,7 +871,7 @@
   });
 
   // ── SECTION SWITCHING ──────────────────────────────────
-  const sections = ['listings','activity','impact','settings'];
+  const sections = ['listings','activity','impact','messages','settings'];
   function showSection(name, el) {
     if (el) {
       document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
@@ -1098,34 +1098,97 @@
 
   // Render conversations list
   function renderConversationsList(conversations) {
-    const container = document.getElementById('conversations-list');
+  const list = document.getElementById('conversations-list');
+  if (!list) return;
 
-    if (conversations.length === 0) {
-      container.innerHTML = '<p style="padding:2rem;text-align:center;color:var(--muted)">No conversations yet. Start messaging when you claim or receive a listing!</p>';
+  if (conversations.length === 0) {
+    list.innerHTML = '<p style="padding:1rem;color:var(--muted)">No messages yet. When someone claims your listing, a conversation will start automatically.</p>';
+    return;
+  }
+
+  list.innerHTML = conversations.map(conv => {
+    const otherUserId = conv.participants.find(id => id !== currentUserId);
+    const unread = conv.unreadCount?.[currentUserId] || 0;
+    const lastUpdated = conv.lastUpdated?.toDate
+      ? conv.lastUpdated.toDate().toLocaleDateString('en-GB', { day:'numeric', month:'short' })
+      : '';
+
+    return `
+      <div class="conversation-item" onclick="openConversation('${conv.id}', '${conv.relatedListingName || 'Conversation'}')">
+        <div class="conversation-header">
+          <h4>${conv.relatedListingName || 'Conversation'}</h4>
+          <p class="conversation-last-message">${conv.lastMessage || 'No messages yet'}</p>
+        </div>
+        <div class="conversation-meta">
+          <span class="conversation-time">${lastUpdated}</span>
+          ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function updateUnreadBadge() {
+  const list = document.getElementById('conversations-list');
+  if (!list) return;
+  const badges = list.querySelectorAll('.unread-badge');
+  const total = [...badges].reduce((sum, b) => sum + parseInt(b.textContent || '0'), 0);
+  document.getElementById('messages-badge').textContent = total > 0 ? total : '0';
+}
+
+function openConversation(conversationId, title) {
+  currentConversationId = conversationId;
+  document.getElementById('conversation-title').textContent = title;
+  document.getElementById('conversations-list').style.display = 'none';
+  document.getElementById('conversation-view').style.display = 'flex';
+
+  if (messagesUnsubscribe) messagesUnsubscribe();
+
+  messagesUnsubscribe = window.messaging.subscribeToMessages(conversationId, (messages) => {
+    const container = document.getElementById('messages-container');
+    if (messages.length === 0) {
+      container.innerHTML = '<p style="padding:1rem;color:var(--muted);text-align:center">No messages yet.</p>';
       return;
     }
-
-    container.innerHTML = conversations.map(conv => {
-      const otherParticipantId = conv.participants.find(id => id !== currentUserId);
-      const unreadCount = conv.unreadCount?.[currentUserId] || 0;
-
-      // In a real app, you'd fetch the other user's profile here
-      // For now, we'll show a placeholder
-
+    container.innerHTML = messages.map(msg => {
+      const isSent = msg.senderId === currentUserId;
+      const time = msg.timestamp?.toDate
+        ? msg.timestamp.toDate().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })
+        : '';
       return `
-        <div class="conversation-item" onclick="openConversation('${conv.id}')">
-          <div class="conversation-header">
-            <h4>Conversation with another user</h4>
-            <p class="conversation-last-message">${conv.lastMessage || 'No messages yet'}</p>
-          </div>
-          <div class="conversation-meta">
-            <span class="conversation-time">${formatTimeAgo(conv.lastUpdated?.toDate() || new Date())}</span>
-            ${unreadCount > 0 ? `<span class="unread-badge">${unreadCount}</span>` : ''}
+        <div class="message-item ${isSent ? 'message-sent' : 'message-received'}">
+          <div>
+            <div class="message-content">${msg.text}</div>
+            <div class="message-meta">${time}</div>
           </div>
         </div>
       `;
     }).join('');
-  }
+    container.scrollTop = container.scrollHeight;
+  });
+
+  window.messaging.markMessagesAsRead(conversationId, currentUserId).catch(console.error);
+
+  document.getElementById('message-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const input = document.getElementById('message-input');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    try {
+      await window.messaging.sendMessage(conversationId, currentUserId, text);
+    } catch (err) {
+      showToast('Could not send message. Please try again.', 'error');
+    }
+  };
+}
+
+function hideConversationView() {
+  document.getElementById('conversation-view').style.display = 'none';
+  document.getElementById('conversations-list').style.display = 'block';
+  if (messagesUnsubscribe) { messagesUnsubscribe(); messagesUnsubscribe = null; }
+  currentConversationId = null;
+}
 
   // Open a conversation
   async function openConversation(conversationId) {
