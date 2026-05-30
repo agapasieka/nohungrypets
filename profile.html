@@ -686,7 +686,10 @@
 <script src="js/main.js"></script>
 <script src="js/messaging.js"></script>
 <script>
-
+let conversationsUnsubscribe = null;
+let messagesUnsubscribe = null;
+let currentConversationId = null;
+let currentUserId = null;
   // ── LOAD USER DATA ─────────────────────────────────────
   onAuthChange(async user => {
     if (!user) {
