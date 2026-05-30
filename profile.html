@@ -1173,17 +1173,22 @@ function openConversation(conversationId, title) {
   window.messaging.markMessagesAsRead(conversationId, currentUserId).catch(console.error);
 
   document.getElementById('message-form').onsubmit = async (e) => {
-    e.preventDefault();
-    const input = document.getElementById('message-input');
-    const text = input.value.trim();
-    if (!text) return;
-    input.value = '';
-    try {
-      await window.messaging.sendMessage(conversationId, currentUserId, text);
-    } catch (err) {
-      showToast('Could not send message. Please try again.', 'error');
+  e.preventDefault();
+  const input = document.getElementById('message-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  try {
+    const user = firebase.auth().currentUser;
+    if (!user) {
+      showToast('Please log in to send messages.', 'error');
+      return;
     }
-  };
+    await window.messaging.sendMessage(conversationId, user.uid, text);
+  } catch (err) {
+    showToast('Could not send message. Please try again.', 'error');
+  }
+};
 }
 
 function hideConversationView() {
