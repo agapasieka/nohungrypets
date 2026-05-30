@@ -15,43 +15,24 @@
  * @returns {Promise<string>} Conversation ID
  */
 async function getOrCreateConversation(userId1, userId2, listingId = null, listingName = null) {
-  // Ensure consistent ordering for conversation ID
   const [smallerId, largerId] = [userId1, userId2].sort();
   const conversationId = `${smallerId}_${largerId}`;
 
   try {
-    // Check if conversation already exists
-    const conversationDoc = await db.collection('conversations').doc(conversationId).get();
+    await db.collection('conversations').doc(conversationId).set({
+      participants: [userId1, userId2],
+      lastMessage: '',
+      lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+      unreadCount: {
+        [userId1]: 0,
+        [userId2]: 0
+      },
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      relatedListingId: listingId || null,
+      relatedListingName: listingName || null
+    }, { merge: true });
 
-    if (conversationDoc.exists) {
-      // Update listing info if provided and different
-      if (listingId || listingName) {
-        const updateData = {};
-        if (listingId) updateData.relatedListingId = listingId;
-        if (listingName) updateData.relatedListingName = listingName;
-
-        if (Object.keys(updateData).length > 0) {
-          await db.collection('conversations').doc(conversationId).update(updateData);
-        }
-      }
-      return conversationId;
-    } else {
-      // Create new conversation
-      await db.collection('conversations').doc(conversationId).set({
-        participants: [userId1, userId2],
-        lastMessage: '',
-        lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
-        unreadCount: {
-          [userId1]: 0,
-          [userId2]: 0
-        },
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        relatedListingId: listingId || null,
-        relatedListingName: listingName || null
-      });
-
-      return conversationId;
-    }
+    return conversationId;
   } catch (error) {
     console.error('Error getting/creating conversation:', error);
     throw error;
