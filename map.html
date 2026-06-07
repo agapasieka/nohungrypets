@@ -18,6 +18,7 @@
     .card {
       background: white; border-radius: 24px; padding: 2rem;
       box-shadow: var(--card-shadow);
+      position: relative; /* fixes card appearing behind map */
     }
     .card h2 {
       margin: 0 0 0.5rem;
@@ -28,10 +29,15 @@
     }
     .card p { margin: 0 0 1.25rem; color: var(--brown-mid); font-weight: 500; line-height: 1.6; }
     #map {
-      height: 420px;
+      height: 480px;
       border-radius: 18px;
       border: 1px solid rgba(61,43,31,0.10);
       overflow: hidden;
+      z-index: 0; /* keeps map tiles below page elements */
+    }
+    .map-status {
+      font-size: 0.85rem; color: var(--muted);
+      margin-bottom: 1rem;
     }
     .cta-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.25rem; }
     @media (max-width: 800px) { .wrap { padding: 0 1.5rem 4rem; } }
@@ -54,13 +60,14 @@
   <div class="page-header-inner">
     <div class="page-tag">✦ Map view</div>
     <h1>Find listings <em>nearby</em></h1>
-    <p>This page is under development. For now, browse listings in the list view.</p>
+    <p>Browse available pet food and supplies on the map.</p>
   </div>
 </div>
 
 <main class="wrap">
   <section class="card">
-    <h2>Map</h2>
+    <h2>Live listings</h2>
+    <p class="map-status" id="map-status">Loading listings...</p>
     <div id="map" aria-label="Map showing listings"></div>
     <div class="cta-row">
       <a class="btn-primary" href="listings.html">Browse listings</a>
@@ -82,6 +89,11 @@
   </div>
 </footer>
 
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="js/auth.js"></script>
 <script src="js/main.js"></script>
 <script
   src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
@@ -89,42 +101,94 @@
   crossorigin=""
 ></script>
 <script>
-  (function () {
-    const el = document.getElementById('map');
-    if (!el || !window.L) return;
+(async function () {
+  const el = document.getElementById('map');
+  const statusEl = document.getElementById('map-status');
+  if (!el || !window.L) return;
 
-    // Default view: Burton upon Trent (matches the demo copy on the homepage).
-    const map = L.map('map', { scrollWheelZoom: false }).setView([52.805, -1.636], 13);
+  // Default centre — UK midpoint
+  const map = L.map('map', { scrollWheelZoom: false }).setView([52.5, -1.5], 7);
 
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'
-    }).addTo(map);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'
+  }).addTo(map);
 
-    const demoListings = [
-      { name: 'Royal Canin Adult', animal: '🐕 Dog', miles: '0.3 miles', price: 'Free', lat: 52.807, lng: -1.634 },
-      { name: 'Whiskas Pouches x12', animal: '🐈 Cat', miles: '0.8 miles', price: 'Free', lat: 52.800, lng: -1.646 },
-      { name: 'Rabbit Pellets 2kg', animal: '🐇 Rabbit', miles: '1.2 miles', price: 'Free', lat: 52.812, lng: -1.650 }
-    ];
+  // Geocode a UK postcode using postcodes.io (free, no key needed)
+  async function geocodePostcode(postcode) {
+    try {
+      const res = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(postcode)}`);
+      const data = await res.json();
+      if (data.status === 200 && data.result) {
+        return { lat: data.result.latitude, lng: data.result.longitude };
+      }
+    } catch (e) {}
+    return null;
+  }
 
-    demoListings.forEach((d) => {
-      const html = `
-        <div style="min-width:180px">
-          <div style="font-weight:900;color:#3D2B1F">${d.name}</div>
-          <div style="margin-top:4px;color:#7A5C4A;font-weight:700;font-size:12px">${d.animal} · ${d.miles} · ${d.price}</div>
-          <div style="margin-top:10px">
-            <a href="listings.html" style="color:#E8733A;font-weight:900;text-decoration:none">Browse listings →</a>
-          </div>
+  // Load available listings from Firestore
+  let snapshot;
+  try {
+    snapshot = await db.collection('listings')
+      .where('status', '==', 'available')
+      .get();
+  } catch (e) {
+    statusEl.textContent = 'Could not load listings.';
+    return;
+  }
+
+  if (snapshot.empty) {
+    statusEl.textContent = 'No available listings at the moment.';
+    map.setView([52.5, -1.5], 7);
+    return;
+  }
+
+  const markers = [];
+  const promises = snapshot.docs.map(async (doc) => {
+    const d = doc.data();
+    if (!d.postcode) return;
+
+    const coords = await geocodePostcode(d.postcode);
+    if (!coords) return;
+
+    const animal = d.animals && d.animals.length ? d.animals[0] : 'Pet';
+    const image = d.imageUrls && d.imageUrls.length
+      ? `<img src="${d.imageUrls[0]}" style="width:100%;height:80px;object-fit:cover;border-radius:8px;margin-bottom:8px">`
+      : '';
+
+    const html = `
+      <div style="min-width:200px;font-family:'DM Sans',sans-serif">
+        ${image}
+        <div style="font-weight:900;color:#3D2B1F;font-size:0.95rem">${d.itemName || 'Item'}</div>
+        <div style="margin-top:4px;color:#7A5C4A;font-size:0.8rem;font-weight:600">${animal} · ${d.postcode} · Free</div>
+        ${d.description ? `<div style="margin-top:6px;color:#9A8578;font-size:0.78rem">${d.description.slice(0, 80)}${d.description.length > 80 ? '...' : ''}</div>` : ''}
+        <div style="margin-top:10px">
+          <a href="listings.html" style="color:#E8733A;font-weight:900;text-decoration:none;font-size:0.85rem">View listings →</a>
         </div>
-      `;
-      L.marker([d.lat, d.lng]).addTo(map).bindPopup(html);
-    });
+      </div>
+    `;
 
-    // Fit to demo pins on load.
-    const bounds = L.latLngBounds(demoListings.map((d) => [d.lat, d.lng]));
+    const marker = L.marker([coords.lat, coords.lng]).addTo(map).bindPopup(html);
+    markers.push([coords.lat, coords.lng]);
+  });
+
+  await Promise.all(promises);
+
+  if (markers.length === 0) {
+    statusEl.textContent = 'No listings could be placed on the map.';
+    return;
+  }
+
+  statusEl.textContent = `${markers.length} available listing${markers.length !== 1 ? 's' : ''} on the map`;
+
+  // Fit map to all markers
+  if (markers.length === 1) {
+    map.setView(markers[0], 14);
+  } else {
+    const bounds = L.latLngBounds(markers);
     map.fitBounds(bounds.pad(0.25));
-  })();
+  }
+})();
 </script>
 </body>
 </html>
-
