@@ -1130,7 +1130,15 @@
     }
   }
 
-  window.addEventListener('DOMContentLoaded', loadRecentListings);
+  window.addEventListener('DOMContentLoaded', async () => {
+  await new Promise(resolve => {
+    const check = setInterval(() => {
+      if (window.db) { clearInterval(check); resolve(); }
+    }, 100);
+    setTimeout(() => { clearInterval(check); resolve(); }, 5000);
+  });
+  loadRecentListings();
+});
 </script>
 
 <script
