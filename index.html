@@ -905,15 +905,17 @@
 <div class="modal-overlay" id="donationModal" onclick="closeDonationModalOutside(event)">
   <div class="modal" style="max-width: 500px;">
     <button class="modal-close" onclick="closeDonationModal()">✕</button>
-    <h2>Find Local Pet Food Banks & Shelters</h2>
-    <p>Donate larger quantities of pet food to these organizations in your area.</p>
+    <h2>🐾 Find Local Pet Food Banks</h2>
+    <p>Enter your postcode or town to find animal shelters and pet food banks nearby.</p>
     <div class="form-group">
-      <label>Search by postcode or city</label>
-      <input type="text" id="donation-search-input" placeholder="Enter your postcode or city..." oninput="filterDonationCenters()"/>
+      <label>Your postcode or town</label>
+      <input type="text" id="donation-search-input" placeholder="e.g. DE14 1AA or Burton upon Trent"
+        onkeydown="if(event.key==='Enter') searchDonationCenters()"/>
     </div>
-    <div id="donation-results">
-      <p style="text-align:center; color:var(--muted); padding:2rem;">Loading local organizations...</p>
+    <div style="margin-bottom:1.5rem">
+      <button class="btn-full" onclick="searchDonationCenters()" style="margin-top:0">🔍 Find nearby</button>
     </div>
+    <div id="donation-results"></div>
   </div>
 </div>
 
@@ -979,64 +981,70 @@
 
   function openDonationModal() {
     document.getElementById('donationModal').classList.add('open');
-    document.body.classList.add('has-notice');
-    loadDonationCenters();
+    document.getElementById('donation-results').innerHTML = '';
+    document.getElementById('donation-search-input').value = '';
   }
 
   function closeDonationModal() {
     document.getElementById('donationModal').classList.remove('open');
-    if (!document.getElementById('modal').classList.contains('open')) {
-      document.body.classList.remove('has-notice');
-    }
   }
 
   function closeDonationModalOutside(e) {
     if (e.target === document.getElementById('donationModal')) closeDonationModal();
   }
 
-  const donationCenters = [
-    { name: "Burton Animal Shelter", address: "123 Animal Care Ln, Burton upon Trent", postcode: "DE14 2FG", phone: "01283 123456", website: "burtonanimalshelter.org.uk" },
-    { name: "East Staffordshire Pet Food Bank", address: "456 Charity Way, Barton under Needwood", postcode: "DE13 8JH", phone: "01283 654321", website: "espfb.org.uk" },
-    { name: "RSPCA Burton & District", address: "789 Rescue Rd, Burton upon Trent", postcode: "DE13 0AA", phone: "01283 789012", website: "rspca.org.uk/burton" },
-    { name: "PDSA PetAid Hospital", address: "321 Veterinary Ave, Derby", postcode: "DE1 3GZ", phone: "0800 731 2502", website: "pdsa.org.uk" },
-    { name: "Blue Cross Rehoming Centre", address: "654 Adoption Ln, Coventry", postcode: "CV6 4BU", phone: "0300 777 1897", website: "bluecross.org.uk" }
-  ];
-
-  function loadDonationCenters() {
-    const resultsDiv = document.getElementById('donation-results');
-    resultsDiv.innerHTML = donationCenters.map(center => `
-      <div style="background:white; border-radius:12px; padding:1.5rem; margin-bottom:1rem; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
-        <h3 style="color:var(--brown); margin-bottom:0.5rem;">${center.name}</h3>
-        <p style="color:var(--muted); margin-bottom:0.5rem;"><strong>Address:</strong> ${center.address}</p>
-        <p style="color:var(--muted); margin-bottom:0.5rem;"><strong>Postcode:</strong> ${center.postcode}</p>
-        <p style="color:var(--muted); margin-bottom:0.5rem;"><strong>Phone:</strong> ${center.phone}</p>
-        <p style="color:var(--muted); margin-bottom:0.5rem;"><strong>Website:</strong> <a href="https://${center.website}" target="_blank" style="color:var(--orange); text-decoration:none;">${center.website}</a></p>
-      </div>
-    `).join('');
-  }
-
-  function filterDonationCenters() {
-    const searchTerm = document.getElementById('donation-search-input').value.toLowerCase();
-    const resultsDiv = document.getElementById('donation-results');
-    if (!searchTerm) { loadDonationCenters(); return; }
-    const filtered = donationCenters.filter(center =>
-      center.name.toLowerCase().includes(searchTerm) ||
-      center.address.toLowerCase().includes(searchTerm) ||
-      center.postcode.toLowerCase().includes(searchTerm)
-    );
-    if (filtered.length === 0) {
-      resultsDiv.innerHTML = '<p style="text-align:center; color:var(--muted); padding:2rem;">No donation centers found matching your search.</p>';
+  function searchDonationCenters() {
+    const input = document.getElementById('donation-search-input').value.trim();
+    if (!input) {
+      document.getElementById('donation-results').innerHTML =
+        '<p style="color:var(--orange);font-size:0.85rem">Please enter a postcode or town.</p>';
       return;
     }
-    resultsDiv.innerHTML = filtered.map(center => `
-      <div style="background:white; border-radius:12px; padding:1.5rem; margin-bottom:1rem; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
-        <h3 style="color:var(--brown); margin-bottom:0.5rem;">${center.name}</h3>
-        <p style="color:var(--muted); margin-bottom:0.5rem;"><strong>Address:</strong> ${center.address}</p>
-        <p style="color:var(--muted); margin-bottom:0.5rem;"><strong>Postcode:</strong> ${center.postcode}</p>
-        <p style="color:var(--muted); margin-bottom:0.5rem;"><strong>Phone:</strong> ${center.phone}</p>
-        <p style="color:var(--muted); margin-bottom:0.5rem;"><strong>Website:</strong> <a href="https://${center.website}" target="_blank" style="color:var(--orange); text-decoration:none;">${center.website}</a></p>
+    const encoded = encodeURIComponent(input);
+    document.getElementById('donation-results').innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:0.75rem">
+        <a href="https://www.google.com/maps/search/pet+food+bank+near+${encoded}"
+          target="_blank" rel="noopener noreferrer"
+          style="display:flex;align-items:center;gap:1rem;padding:1rem;background:var(--cream);border-radius:12px;text-decoration:none"
+          onmouseover="this.style.background='var(--warm)'" onmouseout="this.style.background='var(--cream)'">
+          <div style="font-size:1.5rem">🗺️</div>
+          <div>
+            <div style="font-weight:700;color:var(--brown);font-size:0.9rem">Pet food banks near ${input}</div>
+            <div style="font-size:0.78rem;color:var(--muted)">Search on Google Maps →</div>
+          </div>
+        </a>
+        <a href="https://www.google.com/maps/search/animal+shelter+near+${encoded}"
+          target="_blank" rel="noopener noreferrer"
+          style="display:flex;align-items:center;gap:1rem;padding:1rem;background:var(--cream);border-radius:12px;text-decoration:none"
+          onmouseover="this.style.background='var(--warm)'" onmouseout="this.style.background='var(--cream)'">
+          <div style="font-size:1.5rem">🏠</div>
+          <div>
+            <div style="font-weight:700;color:var(--brown);font-size:0.9rem">Animal shelters near ${input}</div>
+            <div style="font-size:0.78rem;color:var(--muted)">Search on Google Maps →</div>
+          </div>
+        </a>
+        <a href="https://www.google.com/maps/search/RSPCA+near+${encoded}"
+          target="_blank" rel="noopener noreferrer"
+          style="display:flex;align-items:center;gap:1rem;padding:1rem;background:var(--cream);border-radius:12px;text-decoration:none"
+          onmouseover="this.style.background='var(--warm)'" onmouseout="this.style.background='var(--cream)'">
+          <div style="font-size:1.5rem">🐾</div>
+          <div>
+            <div style="font-weight:700;color:var(--brown);font-size:0.9rem">RSPCA near ${input}</div>
+            <div style="font-size:0.78rem;color:var(--muted)">Search on Google Maps →</div>
+          </div>
+        </a>
+        <a href="https://www.pdsa.org.uk/about-us/our-pet-hospitals/find-a-pdsa-pet-hospital"
+          target="_blank" rel="noopener noreferrer"
+          style="display:flex;align-items:center;gap:1rem;padding:1rem;background:var(--cream);border-radius:12px;text-decoration:none"
+          onmouseover="this.style.background='var(--warm)'" onmouseout="this.style.background='var(--cream)'">
+          <div style="font-size:1.5rem">🏥</div>
+          <div>
+            <div style="font-weight:700;color:var(--brown);font-size:0.9rem">PDSA Pet Hospitals</div>
+            <div style="font-size:0.78rem;color:var(--muted)">Find your nearest PDSA →</div>
+          </div>
+        </a>
       </div>
-    `).join('');
+    `;
   }
 </script>
 
