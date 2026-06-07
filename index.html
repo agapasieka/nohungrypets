@@ -233,7 +233,6 @@
       background: linear-gradient(135deg, #e8f4e8 0%, #d4ecd8 50%, #c8e6cc 100%);
       position: relative; overflow: hidden;
     }
-    /* Fake map roads */
     .map-placeholder::before {
       content: '';
       position: absolute; inset: 0;
@@ -268,7 +267,6 @@
       background: white; padding: 0.4rem 1rem; border-radius: 50px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    /* Floating listing cards on hero */
     .listing-float {
       position: absolute;
       background: white; border-radius: 16px;
@@ -431,60 +429,6 @@
       max-width: 1200px; margin: 0 auto;
       display: grid; grid-template-columns: 1fr 1.4fr;
       gap: 4rem; align-items: center;
-    }
-    .big-map {
-      border-radius: 24px; overflow: hidden;
-      box-shadow: var(--card-shadow);
-      height: 420px;
-      background: linear-gradient(135deg, #d4ecd8 0%, #b8dfc0 50%, #a8d4b0 100%);
-      position: relative;
-    }
-    .big-map::before {
-      content: '';
-      position: absolute; inset: 0;
-      background-image:
-        linear-gradient(rgba(255,255,255,0.35) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.35) 1px, transparent 1px);
-      background-size: 60px 60px;
-    }
-    .map-pins {
-      position: absolute; inset: 0;
-    }
-    .map-pin {
-      position: absolute;
-      width: 36px; height: 36px; border-radius: 50% 50% 50% 0;
-      transform: rotate(-45deg);
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-      cursor: pointer; transition: transform 0.2s;
-    }
-    .map-pin:hover { transform: rotate(-45deg) scale(1.2); }
-    .map-pin span { transform: rotate(45deg); font-size: 0.9rem; }
-    .pin-orange { background: var(--orange); }
-    .pin-green { background: var(--green); }
-    .map-pin-pulse {
-      position: absolute; inset: -4px; border-radius: 50%;
-      border: 2px solid currentColor; opacity: 0;
-      animation: pulse 2s ease-out infinite;
-    }
-    @keyframes pulse {
-      0% { transform: scale(1); opacity: 0.6; }
-      100% { transform: scale(2.5); opacity: 0; }
-    }
-    .map-legend {
-      position: absolute; bottom: 16px; left: 16px;
-      background: white; border-radius: 12px;
-      padding: 0.8rem 1rem;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.12);
-    }
-    .legend-item {
-      display: flex; align-items: center; gap: 0.5rem;
-      font-size: 0.75rem; color: var(--brown-mid); font-weight: 500;
-      margin-bottom: 0.3rem;
-    }
-    .legend-item:last-child { margin-bottom: 0; }
-    .legend-dot {
-      width: 10px; height: 10px; border-radius: 50%;
     }
 
     .map-features h2 {
@@ -665,7 +609,6 @@
       .how-grid { grid-template-columns: 1fr; }
       .listings-grid { grid-template-columns: 1fr 1fr; }
       .map-section-inner { grid-template-columns: 1fr; }
-      .big-map { height: 300px; }
       .nav-links { display: none; }
       .signup-form { flex-direction: column; }
     }
@@ -738,8 +681,8 @@
       <div class="listing-float listing-float-1">
         <div class="listing-icon listing-icon-orange">🐕</div>
         <div>
-          <div class="listing-info-name">Royal Canin Adult</div>
-          <div class="listing-info-dist">0.3 miles away · Free</div>
+          <div class="listing-info-name">Pet food available</div>
+          <div class="listing-info-dist">Near you · Free</div>
           <div class="listing-info-tag">Dog food</div>
         </div>
       </div>
@@ -747,22 +690,22 @@
         <div class="map-card-header">
           <div>
             <div class="map-card-title">Listings near you</div>
-            <div class="map-card-subtitle">Burton upon Trent · 12 available</div>
+            <div class="map-card-subtitle">Your area · listings available now</div>
           </div>
           <span style="font-size:1.4rem">📍</span>
         </div>
         <div class="map-placeholder">
           <div class="map-overlay-text">
             <div class="map-pin-demo"><span>🐾</span></div>
-            <p>12 listings within 2 miles</p>
+            <p>Listings within 2 miles</p>
           </div>
         </div>
       </div>
       <div class="listing-float listing-float-2">
         <div class="listing-icon listing-icon-green">🐈</div>
         <div>
-          <div class="listing-info-name">Whiskas Pouches x12</div>
-          <div class="listing-info-dist">0.8 miles away · Free</div>
+          <div class="listing-info-name">Supplies to claim</div>
+          <div class="listing-info-dist">Near you · Free</div>
           <div class="listing-info-tag">Cat food</div>
         </div>
       </div>
@@ -793,7 +736,7 @@
         <div class="how-num">03</div>
         <span class="how-icon">🤝</span>
         <h3>Connect &amp; collect nearby</h3>
-        <p>Our AI matches you with givers nearby. Message them directly, arrange a doorstep pickup and your pet eats — simple as that.</p>
+        <p>Browse listings near you, claim what your pet needs, and message the owner directly to arrange a doorstep pickup.</p>
       </div>
     </div>
   </div>
@@ -811,7 +754,7 @@
       </div>
     </div>
     <div style="text-align:center; margin-top:2.5rem">
-      <a href="#" class="btn-secondary" onclick="window.location.href='login.html'">View all listings near me →</a>
+      <a href="listings.html" class="btn-secondary">View all listings →</a>
     </div>
   </div>
 </section>
@@ -819,7 +762,7 @@
 <!-- MAP SECTION -->
 <section class="map-section" id="map">
   <div class="map-section-inner">
-    <div id="leaflet-map" style="height:420px; border-radius:24px; box-shadow: var(--card-shadow); border: 1px solid rgba(61,43,31,0.10); overflow:hidden;"></div>
+    <div id="leaflet-map" style="height:420px; border-radius:24px; box-shadow: var(--card-shadow); border: 1px solid rgba(61,43,31,0.10); overflow:hidden; z-index:0;"></div>
 
     <div class="map-features">
       <div class="section-tag">✦ Find nearby</div>
@@ -836,15 +779,15 @@
         <div class="feature-item">
           <div class="feature-icon">🔔</div>
           <div>
-            <h4>Instant notifications</h4>
-            <p>Get alerted the moment someone posts pet food that matches your animal in your area.</p>
+            <h4>Real listings, real people</h4>
+            <p>Every pin on the map is a real listing posted by a pet owner in your area — updated live as new items are shared.</p>
           </div>
         </div>
         <div class="feature-item">
-          <div class="feature-icon">🤖</div>
+          <div class="feature-icon">🤝</div>
           <div>
-            <h4>AI-powered matching</h4>
-            <p>Our AI learns what your pet needs and automatically surfaces the most relevant listings for you first.</p>
+            <h4>Claim in one click</h4>
+            <p>See something your pet needs? Claim it instantly and message the owner directly to arrange collection.</p>
           </div>
         </div>
       </div>
@@ -857,7 +800,7 @@
   <div class="signup-inner">
     <div class="section-tag">✦ Join the community</div>
     <h2>Be part of something <em>good</em></h2>
-    <p>Join thousands of pet owners helping each other out. It's free, it's local, and every bowl filled is a pet that didn't go hungry today.</p>
+    <p>Join pet owners helping each other out. It's free, it's local, and every bowl filled is a pet that didn't go hungry today.</p>
     <div class="signup-form">
       <input type="email" placeholder="Your email address..." />
       <button class="btn-primary" onclick="window.location.href='login.html'">Get started free</button>
@@ -894,8 +837,6 @@
       <button class="tab-btn active" onclick="switchTab('register', this)">Sign up</button>
       <button class="tab-btn" onclick="switchTab('login', this)">Log in</button>
     </div>
-
-    <!-- Register form -->
     <div id="form-register">
       <div class="form-group">
         <label>Your name</label>
@@ -916,8 +857,6 @@
       <button class="btn-full">Create free account 🐾</button>
       <p class="modal-footer-text">Already have an account? <a href="#" onclick="switchTabByName('login')">Log in</a></p>
     </div>
-
-    <!-- Login form -->
     <div id="form-login" style="display:none">
       <div class="form-group">
         <label>Email address</label>
@@ -930,8 +869,6 @@
       <button class="btn-full">Log in</button>
       <p class="modal-footer-text">Don't have an account? <a href="#" onclick="switchTabByName('register')">Sign up free</a></p>
     </div>
-
-    <!-- Post form -->
     <div id="form-post" style="display:none">
       <div class="form-group">
         <label>What are you sharing?</label>
@@ -1014,7 +951,6 @@
 
   function closeModal() {
     document.getElementById('modal').classList.remove('open');
-    // Only remove has-notice if the donation modal isn't open
     if (!document.getElementById('donationModal').classList.contains('open')) {
       document.body.classList.remove('has-notice');
     }
@@ -1041,7 +977,6 @@
 
   document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeDonationModal(); } });
 
-  // Donation Modal Functions
   function openDonationModal() {
     document.getElementById('donationModal').classList.add('open');
     document.body.classList.add('has-notice');
@@ -1050,7 +985,6 @@
 
   function closeDonationModal() {
     document.getElementById('donationModal').classList.remove('open');
-    // Only remove has-notice if the site notice isn't open
     if (!document.getElementById('modal').classList.contains('open')) {
       document.body.classList.remove('has-notice');
     }
@@ -1060,7 +994,6 @@
     if (e.target === document.getElementById('donationModal')) closeDonationModal();
   }
 
-  // Mock donation centers data - in a real app, this would come from an API or database
   const donationCenters = [
     { name: "Burton Animal Shelter", address: "123 Animal Care Ln, Burton upon Trent", postcode: "DE14 2FG", phone: "01283 123456", website: "burtonanimalshelter.org.uk" },
     { name: "East Staffordshire Pet Food Bank", address: "456 Charity Way, Barton under Needwood", postcode: "DE13 8JH", phone: "01283 654321", website: "espfb.org.uk" },
@@ -1085,23 +1018,16 @@
   function filterDonationCenters() {
     const searchTerm = document.getElementById('donation-search-input').value.toLowerCase();
     const resultsDiv = document.getElementById('donation-results');
-
-    if (!searchTerm) {
-      loadDonationCenters();
-      return;
-    }
-
+    if (!searchTerm) { loadDonationCenters(); return; }
     const filtered = donationCenters.filter(center =>
       center.name.toLowerCase().includes(searchTerm) ||
       center.address.toLowerCase().includes(searchTerm) ||
       center.postcode.toLowerCase().includes(searchTerm)
     );
-
     if (filtered.length === 0) {
       resultsDiv.innerHTML = '<p style="text-align:center; color:var(--muted); padding:2rem;">No donation centers found matching your search.</p>';
       return;
     }
-
     resultsDiv.innerHTML = filtered.map(center => `
       <div style="background:white; border-radius:12px; padding:1.5rem; margin-bottom:1rem; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
         <h3 style="color:var(--brown); margin-bottom:0.5rem;">${center.name}</h3>
@@ -1114,49 +1040,7 @@
   }
 </script>
 
-<script
-  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-  crossorigin=""
-></script>
-<script>
-  (function () {
-    const el = document.getElementById('leaflet-map');
-    if (!el || !window.L) return;
-
-    // Default view: Burton upon Trent
-    const map = L.map('leaflet-map', { scrollWheelZoom: false }).setView([52.805, -1.636], 13);
-
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'
-    }).addTo(map);
-
-    const demoListings = [
-      { name: 'Royal Canin Adult', animal: '🐕 Dog', miles: '0.3 miles', price: 'Free', lat: 52.807, lng: -1.634, color: '#E8733A' },
-      { name: 'Whiskas Pouches x12', animal: '🐈 Cat', miles: '0.8 miles', price: 'Free', lat: 52.800, lng: -1.646, color: '#3A7D5A' },
-      { name: 'Rabbit Pellets 2kg', animal: '🐇 Rabbit', miles: '1.2 miles', price: 'Free', lat: 52.812, lng: -1.650, color: '#3A7D5A' }
-    ];
-
-    demoListings.forEach((d) => {
-      const html = `
-        <div style="min-width:180px">
-          <div style="font-weight:900;color:#3D2B1F">${d.name}</div>
-          <div style="margin-top:4px;color:#7A5C4A;font-weight:700;font-size:12px">${d.animal} · ${d.miles} · ${d.price}</div>
-          <div style="margin-top:10px">
-            <a href="listings.html" style="color:${d.color};font-weight:900;text-decoration:none">Browse listings →</a>
-          </div>
-        </div>
-      `;
-      L.marker([d.lat, d.lng]).addTo(map).bindPopup(html);
-    });
-
-    // Fit to demo pins on load
-    const bounds = L.latLngBounds(demoListings.map((d) => [d.lat, d.lng]));
-    map.fitBounds(bounds.pad(0.25));
-  })();
-</script>
-
+<!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -1202,16 +1086,16 @@
 
       grid.innerHTML = docs.map((docSnap, i) => {
         const l = docSnap.data();
-        const bgClass = `bg-${(i % 6) + 1}`;
-        const avClass = `av-${(i % 6) + 1}`;
-        
+        const bgClass = `listing-card-img-${(i % 3) + 1}`;
+        const avColors = ['var(--orange)', 'var(--green)', 'var(--brown-mid)'];
+        const avColor = avColors[i % 3];
+
         let imgContent = '';
         if (l.imageUrls && l.imageUrls.length > 0) {
           imgContent = `<img src="${l.imageUrls[0]}" style="width:100%;height:100%;object-fit:cover;">`;
         } else {
           const primaryAnimal = l.animals && l.animals.length > 0 ? l.animals[0] : null;
-          const emoji = animalEmojis[primaryAnimal] || '📦';
-          imgContent = emoji;
+          imgContent = animalEmojis[primaryAnimal] || '📦';
         }
 
         const animalTags = l.animals ? l.animals.map(a => `<span class="animal-tag">${a}</span>`).join('') : '';
@@ -1220,12 +1104,10 @@
           <div class="listing-card">
             <div class="listing-card-img ${bgClass}">
               ${imgContent}
-              <div class="listing-badge-wrap">
-                <span style="background:var(--green);color:white;padding:0.25rem 0.6rem;border-radius:50px;font-size:0.75rem;font-weight:700;">Available</span>
-              </div>
+              <span class="listing-badge">Available</span>
             </div>
             <div class="listing-card-body">
-              <h4>${l.itemName}</h4>
+              <h4>${l.itemName || 'Untitled item'}</h4>
               <div class="listing-meta">
                 <span>📍 ${l.postcode || 'Nearby'}</span>
                 <span>🕐 ${formatTimeAgo(l.createdAt)}</span>
@@ -1234,10 +1116,10 @@
             </div>
             <div class="listing-card-footer">
               <div class="user-info">
-                <div class="user-avatar ${avClass}">${l.posterName ? l.posterName.charAt(0).toUpperCase() : '?'}</div>
-                <span class="user-name">${l.posterName || 'Guest'}</span>
+                <div class="user-avatar" style="background:${avColor}">${l.posterName ? l.posterName.charAt(0).toUpperCase() : '?'}</div>
+                <span class="user-name">${l.posterName || 'Member'}</span>
               </div>
-              <button class="btn-claim" onclick="window.location.href='login.html'">Claim →</button>
+              <button class="btn-claim" onclick="window.location.href='listings.html'">Claim →</button>
             </div>
           </div>
         `;
@@ -1250,4 +1132,87 @@
 
   window.addEventListener('DOMContentLoaded', loadRecentListings);
 </script>
+
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""
+></script>
+<script>
+(async function () {
+  const el = document.getElementById('leaflet-map');
+  if (!el || !window.L) return;
+
+  const map = L.map('leaflet-map', { scrollWheelZoom: false }).setView([52.5, -1.5], 7);
+
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'
+  }).addTo(map);
+
+  async function geocodePostcode(postcode) {
+    try {
+      const res = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(postcode)}`);
+      const data = await res.json();
+      if (data.status === 200 && data.result) {
+        return { lat: data.result.latitude, lng: data.result.longitude };
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  // Wait for Firebase db to be ready
+  await new Promise(resolve => {
+    const check = setInterval(() => {
+      if (window.db) { clearInterval(check); resolve(); }
+    }, 100);
+    setTimeout(() => { clearInterval(check); resolve(); }, 5000);
+  });
+
+  if (!window.db) return;
+
+  let snapshot;
+  try {
+    snapshot = await db.collection('listings').where('status', '==', 'available').get();
+  } catch (e) { return; }
+
+  if (snapshot.empty) return;
+
+  const markers = [];
+  const promises = snapshot.docs.map(async (doc) => {
+    const d = doc.data();
+    if (!d.postcode) return;
+    const coords = await geocodePostcode(d.postcode);
+    if (!coords) return;
+
+    const animal = d.animals && d.animals.length ? d.animals[0] : 'Pet';
+    const image = d.imageUrls && d.imageUrls.length
+      ? `<img src="${d.imageUrls[0]}" style="width:100%;height:80px;object-fit:cover;border-radius:8px;margin-bottom:8px">`
+      : '';
+
+    const html = `
+      <div style="min-width:200px;font-family:'DM Sans',sans-serif">
+        ${image}
+        <div style="font-weight:900;color:#3D2B1F;font-size:0.95rem">${d.itemName || 'Item'}</div>
+        <div style="margin-top:4px;color:#7A5C4A;font-size:0.8rem;font-weight:600">${animal} · ${d.postcode} · Free</div>
+        <div style="margin-top:10px">
+          <a href="listings.html" style="color:#E8733A;font-weight:900;text-decoration:none;font-size:0.85rem">View listings →</a>
+        </div>
+      </div>
+    `;
+    L.marker([coords.lat, coords.lng]).addTo(map).bindPopup(html);
+    markers.push([coords.lat, coords.lng]);
+  });
+
+  await Promise.all(promises);
+
+  if (markers.length === 1) {
+    map.setView(markers[0], 14);
+  } else if (markers.length > 1) {
+    map.fitBounds(L.latLngBounds(markers).pad(0.25));
+  }
+})();
+</script>
+
+</body>
 </html>
