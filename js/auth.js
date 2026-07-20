@@ -124,3 +124,9 @@ function friendlyError(code) {
   };
   return messages[code] || 'Something went wrong. Please try again.';
 }
+
+
+if (window.location.hostname === "localhost") {
+  firebase.auth().useEmulator("http://localhost:9099");
+  firebase.firestore().useEmulator("localhost", 8080);
+}
