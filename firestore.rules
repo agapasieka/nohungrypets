@@ -39,6 +39,17 @@ service cloud.firestore {
                     && request.resource.data.userId == request.auth.uid;
     }
 
+    // Global platform stats - denormalised vanity counters for the admin dashboard.
+    // Only the site owner (hardcoded admin UID) may READ the aggregate doc,
+    // but any signed-in user may increment the counters (non-sensitive metrics;
+    // Firebase Analytics remains the authoritative, tamper-proof traffic source).
+    match /stats/global {
+      allow read: if request.auth != null
+                  && request.auth.uid == 'YVK880UJPFOaqwB2uk1lddqF2fK2';
+      // set(..., {merge:true}) with FieldValue.increment counts as create-or-update
+      allow create, update: if request.auth != null;
+    }
+
     // Conversations collection - core messaging functionality
     match /conversations/{conversationId} {
       // Allow participants to read conversations they're part of

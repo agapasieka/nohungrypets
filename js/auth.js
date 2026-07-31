@@ -9,7 +9,8 @@ const firebaseConfig = {
   projectId: "nohungrypets",
   storageBucket: "nohungrypets.firebasestorage.app",
   messagingSenderId: "145249046661",
-  appId: "1:145249046661:web:11c30f62ce646db13159ec"
+  appId: "1:145249046661:web:11c30f62ce646db13159ec",
+  measurementId: "G-XXXXXXXXXX" // TODO: replace with real measurementId from Firebase Console > Analytics
 };
 
 // ── INIT (only once) ─────────────────────────────────────
@@ -18,6 +19,35 @@ if (!firebase.apps.length) {
 }
 const auth = firebase.auth();
 const db   = firebase.firestore();
+
+// ── ANALYTICS (GA4) ──────────────────────────────────────
+// Traffic/behaviour tracking via Firebase Analytics. Guarded so the
+// placeholder (or any invalid/missing) measurementId never throws or
+// breaks page load — real data only flows once a real ID is swapped in.
+try {
+  if (typeof firebase.analytics === 'function'
+      && firebaseConfig.measurementId
+      && firebaseConfig.measurementId !== 'G-XXXXXXXXXX') {
+    firebase.analytics();
+  }
+} catch (err) {
+  console.warn('Firebase Analytics init skipped:', err);
+}
+
+// ── GLOBAL PLATFORM STATS ────────────────────────────────
+// Denormalised vanity counters (totalUsers/totalListings/totalClaims)
+// shown on the admin dashboard. Uses set+merge with an atomic increment
+// so the stats/global doc is created lazily on first write — no seeding.
+async function incrementGlobalStat(field) {
+  try {
+    await db.collection('stats').doc('global').set(
+      { [field]: firebase.firestore.FieldValue.increment(1) },
+      { merge: true }
+    );
+  } catch (err) {
+    console.error('Error incrementing global stat:', field, err);
+  }
+}
 
 // ── GOOGLE PROVIDER ──────────────────────────────────────
 const googleProvider = new firebase.auth.GoogleAuthProvider();
@@ -37,6 +67,8 @@ async function signUp(name, email, password, postcode) {
     });
     // Update display name
     await result.user.updateProfile({ displayName: name });
+    // Bump global signup counter (vanity metric for admin dashboard)
+    await incrementGlobalStat('totalUsers');
     return { success: true, user: result.user };
   } catch (err) {
     return { success: false, error: friendlyError(err.code) };
@@ -68,6 +100,8 @@ async function signInWithGoogle() {
         listings: 0,
         claims: 0
       });
+      // Bump global signup counter (vanity metric for admin dashboard)
+      await incrementGlobalStat('totalUsers');
     }
     return { success: true, user: result.user };
   } catch (err) {

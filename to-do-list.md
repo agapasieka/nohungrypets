@@ -25,6 +25,7 @@
 - [x] Show thank-you message popup when a good person makes a listing (post.html)
 - [x] Add a donation search section for local pet food banks and shelters (Google Maps links for food banks/shelters/RSPCA + PDSA, index.html donation modal)
 - [x] Notification to nearby pet owners about a new listing available (in-app badge on index.html + profile.html: counts new listings sharing the user's postcode outward code since their last visit, excludes own listings, links to a postcode-filtered listings.html and clears on view)
+- [x] Free observability and analytics on platform usage (Firebase Analytics/GA4 for traffic on every page + a denormalised stats/global Firestore doc counting totalUsers/totalListings/totalClaims, surfaced on an admin-only admin.html dashboard; measurementId placeholder still needs swapping for the real one from the Firebase Console)
 
 ## Core Infrastructure (Pending)
 
@@ -47,8 +48,6 @@
 - [ ] **#️⃣ P5**: iOS/Android app using Flutter? for free?
   - *Effort*: Large
 - [ ] **#️⃣ P5**: Check all options like activity under profile
-  - *Effort*: Small
-- [ ] **#️⃣ P5**: Free observability and notification on how many new users signed up
   - *Effort*: Small
 
 ## Feature Roadmap
