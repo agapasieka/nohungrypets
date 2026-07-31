@@ -9,6 +9,47 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+// ── POSTCODE HELPERS ─────────────────────────────────────
+// Extract the outward code from a UK postcode.
+// e.g. "DE14 1AA" -> "DE14", "SW1A 1AA" -> "SW1A", "M1 1AE" -> "M1".
+// UK inward codes are always 3 chars (digit + 2 letters), so the
+// outward code is everything before the final 3 characters.
+function getOutwardCode(postcode) {
+  if (!postcode || typeof postcode !== 'string') return '';
+  const cleaned = postcode.trim().toUpperCase().replace(/\s+/g, '');
+  if (cleaned.length <= 3) return cleaned; // too short to split reliably
+  return cleaned.slice(0, cleaned.length - 3);
+}
+
+// Count listings that are new to this user and near them.
+// "New" = created after `sinceMillis` (their last visit / account creation).
+// "Near" = same postcode outward code. Own listings are excluded.
+// Returns 0 on any error or when the user has no postcode.
+async function countNearbyNewListings({ db, uid, postcode, sinceMillis }) {
+  const outward = getOutwardCode(postcode);
+  if (!db || !outward) return 0;
+  try {
+    // Single-field filter keeps this index-free (matches existing patterns).
+    const snap = await db.collection('listings')
+      .where('status', '==', 'available')
+      .get();
+    let count = 0;
+    snap.forEach(doc => {
+      const l = doc.data();
+      if (!l) return;
+      if (l.userId === uid) return; // exclude the user's own listings
+      const createdMillis = (l.createdAt && l.createdAt.toMillis) ? l.createdAt.toMillis() : 0;
+      if (createdMillis <= sinceMillis) return; // only listings newer than last visit
+      if (getOutwardCode(l.postcode) !== outward) return; // only nearby (same outward code)
+      count++;
+    });
+    return count;
+  } catch (err) {
+    console.error('Error counting nearby new listings:', err);
+    return 0;
+  }
+}
+
 // Simple toast notification
 function showToast(msg, type = 'success') {
   const t = document.createElement('div');

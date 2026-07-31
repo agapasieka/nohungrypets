@@ -1,0 +1,22 @@
+{
+  "name": "nohungrypets",
+  "version": "1.0.0",
+  "description": "**NoHungryPets** is a simple, free community website for sharing surplus pet food and supplies with people nearby — give what you can, take what you need.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start:emulators": "firebase emulators:start"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/agapasieka/nohungrypets.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/agapasieka/nohungrypets/issues"
+  },
+  "homepage": "https://github.com/agapasieka/nohungrypets#readme"
+}

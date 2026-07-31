@@ -111,6 +111,20 @@
       text-decoration: none; transition: background 0.2s, transform 0.15s;
     }
     .btn-nav:hover { background: var(--orange-deep); transform: translateY(-1px); }
+    /* Nearby-listings notification bell */
+    .nav-bell {
+      position: relative; font-size: 1.25rem; text-decoration: none;
+      line-height: 1; cursor: pointer; transition: transform 0.15s;
+    }
+    .nav-bell:hover { transform: translateY(-1px); }
+    .nav-bell-badge {
+      position: absolute; top: -0.5rem; right: -0.6rem;
+      background: var(--orange); color: white;
+      min-width: 1.1rem; height: 1.1rem; padding: 0 0.3rem;
+      border-radius: 50px; font-size: 0.68rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'DM Sans', sans-serif;
+    }
 
     /* ── HERO ── */
     .hero {
@@ -637,6 +651,9 @@
     <a href="#how">How it works</a>
     <a href="#listings">Browse listings</a>
     <a href="#map">Find nearby</a>
+    <a href="listings.html" class="nav-bell" id="nav-bell" style="display:none;" title="New listings near you" aria-label="New listings near you">
+      🔔<span class="nav-bell-badge" id="nav-bell-count">0</span>
+    </a>
     <a href="#" onclick="window.location.href='post.html'" class="btn-nav">Post for free</a>
   </div>
 </nav>
@@ -1146,7 +1163,51 @@
     setTimeout(() => { clearInterval(check); resolve(); }, 5000);
   });
   loadRecentListings();
+  initNearbyListingsBadge();
 });
+
+  // ── NEARBY LISTINGS NOTIFICATION ─────────────────────────
+  function initNearbyListingsBadge() {
+    onAuthChange(async user => {
+      const bell = document.getElementById('nav-bell');
+      if (!bell) return;
+      if (!user) { bell.style.display = 'none'; return; }
+
+      let profile = null;
+      try {
+        profile = await getUserProfile(user.uid);
+      } catch (err) {
+        console.error('Error loading profile for nearby badge:', err);
+      }
+      if (!profile || !profile.postcode) { bell.style.display = 'none'; return; }
+
+      const outward = getOutwardCode(profile.postcode);
+      // Fall back to account-creation time if the user has never checked before.
+      let sinceMillis = 0;
+      if (profile.lastSeenListingsAt && profile.lastSeenListingsAt.toMillis) {
+        sinceMillis = profile.lastSeenListingsAt.toMillis();
+      } else if (profile.createdAt && profile.createdAt.toMillis) {
+        sinceMillis = profile.createdAt.toMillis();
+      }
+
+      const count = await countNearbyNewListings({
+        db, uid: user.uid, postcode: profile.postcode, sinceMillis
+      });
+
+      if (count > 0) {
+        document.getElementById('nav-bell-count').textContent = count > 99 ? '99+' : count;
+        bell.title = `${count} new listing${count === 1 ? '' : 's'} near you`;
+        bell.style.display = 'inline-flex';
+        bell.onclick = async (e) => {
+          e.preventDefault();
+          await updateLastSeenListings(user.uid);
+          window.location.href = `listings.html?postcode=${encodeURIComponent(outward)}`;
+        };
+      } else {
+        bell.style.display = 'none';
+      }
+    });
+  }
 </script>
 
 <script

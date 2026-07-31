@@ -110,6 +110,19 @@ async function getUserProfile(uid) {
   return doc.exists ? doc.data() : null;
 }
 
+// ── UPDATE last-seen-listings timestamp ───────────────────
+// Records when the user last checked nearby-listing notifications,
+// so the badge only counts listings posted after this point.
+async function updateLastSeenListings(uid) {
+  try {
+    await db.collection('users').doc(uid).update({
+      lastSeenListingsAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (err) {
+    console.error('Error updating lastSeenListingsAt:', err);
+  }
+}
+
 // ── FRIENDLY ERROR MESSAGES ──────────────────────────────
 function friendlyError(code) {
   const messages = {
