@@ -353,8 +353,16 @@
   let filters = {
     animal: 'All',
     item: 'All',
-    search: ''
+    search: '',
+    postcode: ''
   };
+
+  // Optional postcode-prefix pre-filter (e.g. from the nearby-listings badge:
+  // listings.html?postcode=DE14). Matched against each listing's outward code.
+  (function applyPostcodeParam() {
+    const param = new URLSearchParams(window.location.search).get('postcode');
+    if (param) filters.postcode = param.trim().toUpperCase();
+  })();
 
   const animalEmojis = {
     'Dog':'🦴','Cat':'🐟','Rabbit':'🥬',
@@ -410,14 +418,22 @@
       let searchMatch = true;
       if (filters.search) {
         const q = filters.search.toLowerCase();
-        searchMatch = (l.itemName && l.itemName.toLowerCase().includes(q)) || 
+        searchMatch = (l.itemName && l.itemName.toLowerCase().includes(q)) ||
                       (l.description && l.description.toLowerCase().includes(q));
       }
-      
-      return animalMatch && itemMatch && searchMatch;
+
+      let postcodeMatch = true;
+      if (filters.postcode) {
+        postcodeMatch = l.postcode && getOutwardCode(l.postcode) === getOutwardCode(filters.postcode);
+      }
+
+      return animalMatch && itemMatch && searchMatch && postcodeMatch;
     });
 
-    document.getElementById('results-count').innerHTML = `Showing <strong>${filtered.length} listing${filtered.length === 1 ? '' : 's'}</strong>`;
+    const postcodeNote = filters.postcode
+      ? ` near <strong>${filters.postcode}</strong> <a href="#" onclick="clearFilters();return false;" style="color:var(--orange);font-weight:600">(clear)</a>`
+      : '';
+    document.getElementById('results-count').innerHTML = `Showing <strong>${filtered.length} listing${filtered.length === 1 ? '' : 's'}</strong>${postcodeNote}`;
 
     if (filtered.length === 0) {
       grid.innerHTML = `
@@ -518,7 +534,7 @@
       container.querySelector('.chip[data-val="All"]').classList.add('active');
     });
     document.getElementById('search-input').value = '';
-    filters = { animal: 'All', item: 'All', search: '' };
+    filters = { animal: 'All', item: 'All', search: '', postcode: '' };
     renderListings();
     showToast('Filters cleared!', 'success');
   }

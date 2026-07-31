@@ -409,6 +409,10 @@
         <span class="icon">📦</span> My listings
         <span class="badge">3</span>
       </a>
+      <a href="listings.html" class="menu-item" id="nearby-menu-item" style="display:none;" title="New listings near you">
+        <span class="icon">📍</span> New nearby listings
+        <span class="badge" id="nearby-badge">0</span>
+      </a>
       <a href="#" class="menu-item" onclick="showSection('activity', this)">
         <span class="icon">🔔</span> Activity
       </a>
@@ -748,7 +752,10 @@
       document.getElementById('edit-postcode').value = '';
       document.querySelector('#edit-animals .animal-btn').classList.add('selected');
     }
-  
+
+    // ── NEARBY LISTINGS NOTIFICATION ────────────────────────
+    updateNearbyBadge(user, profile);
+
     // Load User Listings
     const listingsContainer = document.querySelector('.my-listings');
     listingsContainer.innerHTML = '<p style="padding:1rem;color:var(--muted)">Loading listings...</p>';
@@ -1032,6 +1039,38 @@
       return sum + (conv.unreadCount?.[currentUserId] || 0);
     }, 0);
     document.getElementById('messages-badge').textContent = total > 0 ? total : '0';
+  }
+
+  // Show a badge of new nearby listings (same postcode outward code,
+  // posted since the user last checked, excluding their own).
+  async function updateNearbyBadge(user, profile) {
+    const item = document.getElementById('nearby-menu-item');
+    if (!item) return;
+    if (!profile || !profile.postcode) { item.style.display = 'none'; return; }
+
+    const outward = getOutwardCode(profile.postcode);
+    let sinceMillis = 0;
+    if (profile.lastSeenListingsAt && profile.lastSeenListingsAt.toMillis) {
+      sinceMillis = profile.lastSeenListingsAt.toMillis();
+    } else if (profile.createdAt && profile.createdAt.toMillis) {
+      sinceMillis = profile.createdAt.toMillis();
+    }
+
+    const count = await countNearbyNewListings({
+      db, uid: user.uid, postcode: profile.postcode, sinceMillis
+    });
+
+    if (count > 0) {
+      document.getElementById('nearby-badge').textContent = count > 99 ? '99+' : count;
+      item.style.display = 'flex';
+      item.onclick = async (e) => {
+        e.preventDefault();
+        await updateLastSeenListings(user.uid);
+        window.location.href = `listings.html?postcode=${encodeURIComponent(outward)}`;
+      };
+    } else {
+      item.style.display = 'none';
+    }
   }
   
   function openConversation(conversationId, title) {
