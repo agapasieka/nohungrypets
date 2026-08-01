@@ -2,3 +2,4 @@ node_modules
 firebase-emulator.log
 firestore-debug.log
 test/
+to-do-list.md
