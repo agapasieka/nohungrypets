@@ -1,5 +1,7 @@
 # NoHungryPets 🐾
 
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/agapasieka/nohungrypets/badge)](https://securityscorecards.dev/viewer/?uri=github.com/agapasieka/nohungrypets)
+
 **NoHungryPets** is a simple, free community website for sharing surplus pet food and supplies with people nearby — give what you can, take what you need.
 
 - **Website**: `https://nohungrypets.co.uk`
