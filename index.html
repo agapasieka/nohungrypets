@@ -1189,7 +1189,6 @@
   // the hero tile. Fails silently (tile stays hidden) if Firestore is
   // unreachable or the field is missing — consistent with other pages.
   async function loadSharedCounter() {
-    if (!window.db) return;
     try {
       const snap = await db.collection('stats').doc('global').get();
       if (!snap.exists) return;
