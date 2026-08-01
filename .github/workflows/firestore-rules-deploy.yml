@@ -1,0 +1,31 @@
+name: Deploy Firestore Rules
+
+on:
+  push:
+    branches: ["master"]
+    paths: ["firestore.rules"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "firestore-rules-deploy"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Write service account key
+        run: echo "$FIREBASE_RULES_DEPLOYER_KEY" > "$RUNNER_TEMP/firebase-key.json"
+        env:
+          FIREBASE_RULES_DEPLOYER_KEY: ${{ secrets.FIREBASE_RULES_DEPLOYER_KEY }}
+
+      - name: Deploy Firestore rules
+        run: npx --yes firebase-tools@13 deploy --only firestore:rules --project nohungrypets --non-interactive
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-key.json
