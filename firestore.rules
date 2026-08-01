@@ -27,6 +27,26 @@ service cloud.firestore {
                     );
     }
 
+    // Global platform stats - denormalised vanity counters for the admin dashboard.
+    // Only the site owner (hardcoded admin UID) may READ the aggregate doc,
+    // but any signed-in user may increment the counters (non-sensitive metrics;
+    // Firebase Analytics remains the authoritative, tamper-proof traffic source).
+    // Writes are restricted to the known counter fields only, so a signed-in user
+    // can't smuggle arbitrary data onto this doc via set(..., {merge:true}).
+    match /stats/global {
+      allow read: if request.auth != null
+                  && request.auth.uid == 'YVK880UJPFOaqwB2uk1lddqF2fK2';
+
+      allow create: if request.auth != null
+                    && request.resource.data.keys()
+                       .hasOnly(['totalUsers', 'totalListings', 'totalClaims']);
+
+      // set(..., {merge:true}) with FieldValue.increment counts as an update
+      allow update: if request.auth != null
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                       .hasOnly(['totalUsers', 'totalListings', 'totalClaims']);
+    }
+
     match /conversations/{conversationId} {
       allow read, write: if request.auth != null
                          && (resource == null
