@@ -227,10 +227,17 @@
       .hero-visual { margin-top: 2.25rem; }
     }
     .map-card {
+      display: block;
       background: white; border-radius: 24px;
       box-shadow: var(--card-shadow);
       overflow: hidden;
       position: relative;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .map-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 32px rgba(61,43,31,0.18);
     }
     .map-card-header {
       padding: 1.2rem 1.5rem;
@@ -707,7 +714,7 @@
           <div class="listing-info-tag">Dog food</div>
         </div>
       </div>
-      <div class="map-card">
+      <a class="map-card" href="/map" aria-label="View the live map of nearby listings">
         <div class="map-card-header">
           <div>
             <div class="map-card-title">Listings near you</div>
@@ -721,7 +728,7 @@
             <p>Listings within 2 miles</p>
           </div>
         </div>
-      </div>
+      </a>
       <div class="listing-float listing-float-2">
         <div class="listing-icon listing-icon-green">🐈</div>
         <div>
