@@ -548,7 +548,16 @@
       text-decoration: none; transition: color 0.2s;
     }
     .footer-links a:hover { color: white; }
-    .footer-copy { font-size: 0.8rem; width: 100%; text-align: center; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.06); margin-top: 1rem; }
+    .footer-bottom {
+      width: 100%; text-align: center;
+      padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.06); margin-top: 1rem;
+    }
+    .footer-stat {
+      font-size: 0.82rem; font-weight: 600; color: rgba(255,255,255,0.6);
+      margin-bottom: 0.5rem;
+    }
+    .footer-stat span { color: var(--orange); font-weight: 800; }
+    .footer-copy { font-size: 0.8rem; }
 
     /* ── MODAL ── */
     .modal-overlay {
@@ -696,10 +705,6 @@
         <div class="stat">
           <div class="stat-num">Local</div>
           <div class="stat-label">Your neighbourhood</div>
-        </div>
-        <div class="stat" id="stat-shared" style="display:none;">
-          <div class="stat-num" id="stat-shared-num">—</div>
-          <div class="stat-label">Food items shared</div>
         </div>
       </div>
       <div class="hero-donate">
@@ -855,7 +860,10 @@
       <a href="/privacy">Privacy</a>
       <a href="/contact">Contact</a>
     </div>
-    <div class="footer-copy">© 2026 NoHungryPets.co.uk · Helping pets eat, one bowl at a time 🐾</div>
+    <div class="footer-bottom">
+      <div class="footer-stat" id="footer-stat" style="display:none;">🐾 <span id="footer-stat-num">0</span> food items shared so far</div>
+      <div class="footer-copy">© 2026 NoHungryPets.co.uk · Helping pets eat, one bowl at a time 🐾</div>
+    </div>
   </div>
 </footer>
 
@@ -1186,7 +1194,7 @@
 
   // ── PUBLIC "FOOD ITEMS SHARED" COUNTER ───────────────────
   // Reads the public stats/global.totalListings vanity counter and reveals
-  // the hero tile. Fails silently (tile stays hidden) if Firestore is
+  // the footer line. Fails silently (stays hidden) if Firestore is
   // unreachable or the field is missing — consistent with other pages.
   async function loadSharedCounter() {
     try {
@@ -1194,8 +1202,8 @@
       if (!snap.exists) return;
       const total = snap.data().totalListings;
       if (typeof total !== 'number' || total <= 0) return;
-      document.getElementById('stat-shared-num').textContent = total.toLocaleString();
-      document.getElementById('stat-shared').style.display = '';
+      document.getElementById('footer-stat-num').textContent = total.toLocaleString();
+      document.getElementById('footer-stat').style.display = '';
     } catch (err) {
       console.error('Error loading shared counter:', err);
     }
