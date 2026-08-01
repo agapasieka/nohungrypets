@@ -17,6 +17,22 @@ const firebaseConfig = {
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
+
+// ── APP CHECK ─────────────────────────────────────────────
+// Attaches App Check tokens to Firebase requests. Enforcement is OFF at
+// the backend for now (monitor-only) — this just starts populating the
+// Firebase Console App Check metrics so real traffic can be confirmed as
+// verified before enforcement is switched on. Guarded like Analytics below
+// so a bad/missing site key never breaks page load.
+try {
+  firebase.appCheck().activate(
+    new firebase.appCheck.ReCaptchaV3Provider('6LffoHAtAAAAAKJyIzxclw2Pwv_9uekwUfXn8J_v'),
+    true
+  );
+} catch (err) {
+  console.warn('App Check init skipped:', err);
+}
+
 const auth = firebase.auth();
 const db   = firebase.firestore();
 
