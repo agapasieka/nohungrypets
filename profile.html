@@ -360,13 +360,13 @@
 <body>
 
 <nav>
-  <a href="index.html" class="nav-logo">🐾 No<span>Hungry</span>Pets</a>
+  <a href="/" class="nav-logo">🐾 No<span>Hungry</span>Pets</a>
   <div class="nav-links">
-    <a href="listings.html">Browse listings</a>
-    <a href="map.html">Map view</a>
-    <a href="post.html">Post a listing</a>
-    <a href="profile.html" class="active">My account</a>
-    <a href="post.html" class="btn-nav">+ Post free</a>
+    <a href="/listings">Browse listings</a>
+    <a href="/map">Map view</a>
+    <a href="/post">Post a listing</a>
+    <a href="/profile" class="active">My account</a>
+    <a href="/post" class="btn-nav">+ Post free</a>
   </div>
 </nav>
 
@@ -409,7 +409,7 @@
         <span class="icon">📦</span> My listings
         <span class="badge">3</span>
       </a>
-      <a href="listings.html" class="menu-item" id="nearby-menu-item" style="display:none;" title="New listings near you">
+      <a href="/listings" class="menu-item" id="nearby-menu-item" style="display:none;" title="New listings near you">
         <span class="icon">📍</span> New nearby listings
         <span class="badge" id="nearby-badge">0</span>
       </a>
@@ -427,10 +427,10 @@
         <span class="icon">⚙️</span> Settings
       </a>
       <div class="menu-divider"></div>
-      <a href="post.html" class="menu-item">
+      <a href="/post" class="menu-item">
         <span class="icon">➕</span> Post a listing
       </a>
-      <a href="listings.html" class="menu-item">
+      <a href="/listings" class="menu-item">
         <span class="icon">🔍</span> Browse listings
       </a>
       <div class="menu-divider"></div>
@@ -448,7 +448,7 @@
     <div class="section-card" id="section-listings">
       <div class="section-card-header">
         <h3>📦 My listings</h3>
-        <a href="post.html" class="btn-ghost">+ Post new</a>
+        <a href="/post" class="btn-ghost">+ Post new</a>
       </div>
       <div class="my-listings">
         <div class="my-listing-row">
@@ -671,12 +671,12 @@
 
 <footer>
   <div class="footer-inner">
-    <a href="index.html" class="footer-logo">No<span>Hungry</span>Pets 🐾</a>
+    <a href="/" class="footer-logo">No<span>Hungry</span>Pets 🐾</a>
     <div class="footer-links">
-      <a href="index.html">Home</a>
-      <a href="listings.html">Listings</a>
-      <a href="post.html">Post</a>
-      <a href="map.html">Map</a>
+      <a href="/">Home</a>
+      <a href="/listings">Listings</a>
+      <a href="/post">Post</a>
+      <a href="/map">Map</a>
     </div>
     <div class="footer-copy">© 2026 NoHungryPets.com · Helping pets eat, one bowl at a time 🐾</div>
   </div>
@@ -700,7 +700,7 @@
   // ── LOAD USER DATA ─────────────────────────────────────
   onAuthChange(async user => {
     if (!user) {
-      window.location.href = 'login.html';
+      window.location.href = '/login';
       return;
     }
   
@@ -1070,7 +1070,7 @@
       item.onclick = async (e) => {
         e.preventDefault();
         await updateLastSeenListings(user.uid);
-        window.location.href = `listings.html?postcode=${encodeURIComponent(outward)}`;
+        window.location.href = `/listings?postcode=${encodeURIComponent(outward)}`;
       };
     } else {
       item.style.display = 'none';

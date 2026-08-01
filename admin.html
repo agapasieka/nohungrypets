@@ -50,13 +50,13 @@
 <body>
 
 <nav>
-  <a href="index.html" class="nav-logo">🐾 No<span>Hungry</span>Pets</a>
+  <a href="/" class="nav-logo">🐾 No<span>Hungry</span>Pets</a>
   <div class="nav-links">
-    <a href="listings.html">Browse listings</a>
-    <a href="map.html">Map view</a>
-    <a href="post.html">Post a listing</a>
-    <a href="profile.html">My account</a>
-    <a href="post.html" class="btn-nav">+ Post free</a>
+    <a href="/listings">Browse listings</a>
+    <a href="/map">Map view</a>
+    <a href="/post">Post a listing</a>
+    <a href="/profile">My account</a>
+    <a href="/post" class="btn-nav">+ Post free</a>
   </div>
 </nav>
 
@@ -98,7 +98,7 @@
       <p>Page views, sessions, sources and device data are tracked with Firebase Analytics (GA4) and live in the Firebase / Google Analytics dashboard.</p>
       <div class="cta-row">
         <a class="btn-primary" href="https://console.firebase.google.com/project/nohungrypets/analytics" target="_blank" rel="noopener">Open Analytics dashboard →</a>
-        <a class="btn-secondary" href="index.html">Back to site</a>
+        <a class="btn-secondary" href="/">Back to site</a>
       </div>
     </section>
   </div>
@@ -106,12 +106,12 @@
 
 <footer>
   <div class="footer-inner">
-    <a href="index.html" class="footer-logo">🐾 No<span>Hungry</span>Pets</a>
+    <a href="/" class="footer-logo">🐾 No<span>Hungry</span>Pets</a>
     <div class="footer-links">
-      <a href="about.html">About</a>
-      <a href="index.html#how">How it works</a>
-      <a href="privacy.html">Privacy</a>
-      <a href="contact.html">Contact</a>
+      <a href="/about">About</a>
+      <a href="/#how">How it works</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/contact">Contact</a>
     </div>
     <div class="footer-copy">© 2026 NoHungryPets.co.uk · Helping pets eat, one bowl at a time 🐾</div>
   </div>
@@ -131,7 +131,7 @@
 
   auth.onAuthStateChanged(async (user) => {
     if (!user || user.uid !== ADMIN_UID) {
-      window.location.href = 'index.html';
+      window.location.href = '/';
       return;
     }
 

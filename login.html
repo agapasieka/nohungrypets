@@ -284,13 +284,13 @@
 <body>
 
 <nav>
-  <a href="index.html" class="nav-logo">🐾 No<span>Hungry</span>Pets</a>
+  <a href="/" class="nav-logo">🐾 No<span>Hungry</span>Pets</a>
   <div class="nav-links">
-    <a href="listings.html">Browse listings</a>
-    <a href="map.html">Map view</a>
-    <a href="post.html">Post a listing</a>
-    <a href="login.html">Sign in</a>
-    <a href="post.html" class="btn-nav">+ Post free</a>
+    <a href="/listings">Browse listings</a>
+    <a href="/map">Map view</a>
+    <a href="/post">Post a listing</a>
+    <a href="/login">Sign in</a>
+    <a href="/post" class="btn-nav">+ Post free</a>
   </div>
 </nav>
 
@@ -298,7 +298,7 @@
 
   <!-- LEFT -->
   <div class="auth-left">
-    <a href="index.html" class="auth-left-logo">🐾 No<span>Hungry</span>Pets</a>
+    <a href="/" class="auth-left-logo">🐾 No<span>Hungry</span>Pets</a>
     <h2>Every pet deserves a <em>full bowl</em></h2>
     <p>Join a community of kind animal lovers sharing pet food and supplies with neighbours in need. Free forever.</p>
     <div class="auth-stat-row">
@@ -384,7 +384,7 @@
 
         <div class="terms-row">
           <input type="checkbox" id="signup-terms"/>
-          <span>I agree to the <a href="terms.html" target="_blank">terms of service</a> and <a href="guidelines.html" target="_blank">community guidelines</a></span>
+          <span>I agree to the <a href="/terms" target="_blank">terms of service</a> and <a href="/guidelines" target="_blank">community guidelines</a></span>
         </div>
 
         <button class="btn-submit" id="signup-btn" onclick="handleSignUp()">
@@ -499,7 +499,7 @@
   // Redirect if already logged in (but not during active signup/login)
   auth.onAuthStateChanged(user => {
     if (user && !isAuthProcessing) {
-      window.location.href = 'profile.html';
+      window.location.href = '/profile';
     }
   });
 
@@ -603,7 +603,7 @@
       // Bump global signup counter (vanity metric for admin dashboard)
       bumpGlobalStat('totalUsers');
       showToast('🎉 Welcome to NoHungryPets, ' + name + '!', 'success');
-      setTimeout(() => window.location.href = 'profile.html', 1200);
+      setTimeout(() => window.location.href = '/profile', 1200);
     } catch (err) {
       isAuthProcessing = false;
       showErr('signup-error', friendlyErr(err.code));
@@ -629,7 +629,7 @@
     try {
       await auth.signInWithEmailAndPassword(email, password);
       showToast('Welcome back! 🐾', 'success');
-      setTimeout(() => window.location.href = 'profile.html', 1000);
+      setTimeout(() => window.location.href = '/profile', 1000);
     } catch (err) {
       isAuthProcessing = false;
       showErr('login-error', friendlyErr(err.code));
@@ -658,7 +658,7 @@
         bumpGlobalStat('totalUsers');
       }
       showToast('Signed in with Google! 🐾', 'success');
-      setTimeout(() => window.location.href = 'profile.html', 1000);
+      setTimeout(() => window.location.href = '/profile', 1000);
     } catch (err) {
       isAuthProcessing = false;
       const active = document.querySelector('.auth-form.active');

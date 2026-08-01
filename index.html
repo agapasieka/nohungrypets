@@ -261,7 +261,7 @@
       position: absolute; inset: 0;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      gap: 0.75rem;
+      gap: 1.25rem;
     }
     .map-pin-demo {
       width: 48px; height: 48px; border-radius: 50% 50% 50% 0;
@@ -270,6 +270,9 @@
       display: flex; align-items: center; justify-content: center;
       box-shadow: 0 4px 16px rgba(232,115,58,0.5);
       animation: bounce 2s ease-in-out infinite;
+      /* the 45deg rotation makes the teardrop's visual bounds taller than
+         the 48px box, so it needs extra clearance above the pill below it */
+      margin-bottom: 12px;
     }
     .map-pin-demo span { transform: rotate(45deg); font-size: 1.2rem; }
     @keyframes bounce {
@@ -283,6 +286,7 @@
     }
     .listing-float {
       position: absolute;
+      z-index: 2;
       background: white; border-radius: 16px;
       padding: 0.8rem 1rem;
       box-shadow: 0 8px 32px rgba(61,43,31,0.15);
@@ -294,7 +298,7 @@
       animation: floatA 4s ease-in-out infinite;
     }
     .listing-float-2 {
-      bottom: 60px; left: -30px;
+      bottom: -20px; left: -30px;
       animation: floatB 4s 1s ease-in-out infinite;
     }
     @keyframes floatA {
@@ -643,7 +647,7 @@
 
 <!-- NAV -->
 <nav>
-  <a href="#" class="nav-logo">
+  <a href="/" class="nav-logo">
     <span class="paw">🐾</span>
     No<span>Hungry</span>Pets
   </a>
@@ -651,10 +655,10 @@
     <a href="#how">How it works</a>
     <a href="#listings">Browse listings</a>
     <a href="#map">Find nearby</a>
-    <a href="listings.html" class="nav-bell" id="nav-bell" style="display:none;" title="New listings near you" aria-label="New listings near you">
+    <a href="/listings" class="nav-bell" id="nav-bell" style="display:none;" title="New listings near you" aria-label="New listings near you">
       🔔<span class="nav-bell-badge" id="nav-bell-count">0</span>
     </a>
-    <a href="#" onclick="window.location.href='post.html'" class="btn-nav">Post for free</a>
+    <a href="#" onclick="window.location.href='/post'" class="btn-nav">Post for free</a>
   </div>
 </nav>
 
@@ -670,7 +674,7 @@
       <h1>No pet should go <em>hungry</em> in your neighbourhood</h1>
       <p>Share surplus pet food, supplies and treats with animal owners nearby. Give what you can, take what you need — completely free, always.</p>
       <div class="hero-ctas">
-        <a href="#" class="btn-primary" onclick="window.location.href='login.html'">Create free account</a>
+        <a href="#" class="btn-primary" onclick="window.location.href='/login'">Create free account</a>
         <a href="#listings" class="btn-secondary">Browse listings nearby</a>
       </div>
       <div class="hero-stats">
@@ -771,7 +775,7 @@
       </div>
     </div>
     <div style="text-align:center; margin-top:2.5rem">
-      <a href="listings.html" class="btn-secondary">View all listings →</a>
+      <a href="/listings" class="btn-secondary">View all listings →</a>
     </div>
   </div>
 </section>
@@ -820,7 +824,7 @@
     <p>Join pet owners helping each other out. It's free, it's local, and every bowl filled is a pet that didn't go hungry today.</p>
     <div class="signup-form">
       <input type="email" placeholder="Your email address..." />
-      <button class="btn-primary" onclick="window.location.href='login.html'">Get started free</button>
+      <button class="btn-primary" onclick="window.location.href='/login'">Get started free</button>
     </div>
     <div class="trust-badges">
       <div class="trust-item"><span>✓</span> Free forever</div>
@@ -833,12 +837,12 @@
 <!-- FOOTER -->
 <footer>
   <div class="footer-inner">
-    <a href="#" class="footer-logo">🐾 No<span>Hungry</span>Pets</a>
+    <a href="/" class="footer-logo">🐾 No<span>Hungry</span>Pets</a>
     <div class="footer-links">
-      <a href="about.html">About</a>
+      <a href="/about">About</a>
       <a href="#how">How it works</a>
-      <a href="privacy.html">Privacy</a>
-      <a href="contact.html">Contact</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/contact">Contact</a>
     </div>
     <div class="footer-copy">© 2026 NoHungryPets.co.uk · Helping pets eat, one bowl at a time 🐾</div>
   </div>
@@ -1146,7 +1150,7 @@
                 <div class="user-avatar" style="background:${avColor}">${l.posterName ? l.posterName.charAt(0).toUpperCase() : '?'}</div>
                 <span class="user-name">${l.posterName || 'Member'}</span>
               </div>
-              <button class="btn-claim" onclick="window.location.href='listings.html'">Claim →</button>
+              <button class="btn-claim" onclick="window.location.href='/listings'">Claim →</button>
             </div>
           </div>
         `;
@@ -1203,7 +1207,7 @@
         bell.onclick = async (e) => {
           e.preventDefault();
           await updateLastSeenListings(user.uid);
-          window.location.href = `listings.html?postcode=${encodeURIComponent(outward)}`;
+          window.location.href = `/listings?postcode=${encodeURIComponent(outward)}`;
         };
       } else {
         bell.style.display = 'none';
@@ -1275,7 +1279,7 @@
         <div style="font-weight:900;color:#3D2B1F;font-size:0.95rem">${d.itemName || 'Item'}</div>
         <div style="margin-top:4px;color:#7A5C4A;font-size:0.8rem;font-weight:600">${animal} · ${d.postcode} · Free</div>
         <div style="margin-top:10px">
-          <a href="listings.html" style="color:#E8733A;font-weight:900;text-decoration:none;font-size:0.85rem">View listings →</a>
+          <a href="/listings" style="color:#E8733A;font-weight:900;text-decoration:none;font-size:0.85rem">View listings →</a>
         </div>
       </div>
     `;

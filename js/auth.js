@@ -2,6 +2,24 @@
 // NoHungryPets - Firebase Auth
 // Uses Firebase v9+ CDN (compat mode for simplicity with GitHub Pages)
 
+// ── CANONICAL URL ─────────────────────────────────────────
+// GitHub Pages serves foo.html at both /foo.html and /foo (extensionless)
+// without redirecting. Anyone who lands on the .html form (old bookmark,
+// external link, direct index.html hit) gets silently normalized to the
+// clean URL via replaceState - no reload, just an address-bar rewrite.
+(function canonicalizeUrl() {
+  const path = location.pathname;
+  let clean = null;
+  if (path.endsWith('/index.html')) {
+    clean = path.slice(0, -'index.html'.length);
+  } else if (path.endsWith('.html') && path !== '/404.html') {
+    clean = path.slice(0, -'.html'.length);
+  }
+  if (clean && clean !== path) {
+    history.replaceState(null, '', clean + location.search + location.hash);
+  }
+})();
+
 // ── CONFIG ──────────────────────────────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyBzWFSJjpxW0InPNCXktzT-RTfQmT4NJTk",
@@ -128,7 +146,7 @@ async function signInWithGoogle() {
 // ── LOG OUT ──────────────────────────────────────────────
 async function logOut() {
   await auth.signOut();
-  window.location.href = 'index.html';
+  window.location.href = '/';
 }
 
 // ── PASSWORD RESET ───────────────────────────────────────
@@ -150,7 +168,7 @@ function onAuthChange(callback) {
 // ── REDIRECT if not logged in ────────────────────────────
 function requireAuth() {
   auth.onAuthStateChanged(user => {
-    if (!user) window.location.href = 'login.html';
+    if (!user) window.location.href = '/login';
   });
 }
 

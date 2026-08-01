@@ -215,13 +215,13 @@
 <body>
 
 <nav>
-  <a href="index.html" class="nav-logo">🐾 No<span>Hungry</span>Pets</a>
+  <a href="/" class="nav-logo">🐾 No<span>Hungry</span>Pets</a>
   <div class="nav-links">
-    <a href="listings.html" class="active">Browse listings</a>
-    <a href="map.html">Map view</a>
-    <a href="post.html">Post a listing</a>
-    <a href="profile.html">My account</a>
-    <a href="post.html" class="btn-nav">+ Post free</a>
+    <a href="/listings" class="active">Browse listings</a>
+    <a href="/map">Map view</a>
+    <a href="/post">Post a listing</a>
+    <a href="/profile">My account</a>
+    <a href="/post" class="btn-nav">+ Post free</a>
   </div>
 </nav>
 
@@ -331,12 +331,12 @@
 
 <footer>
   <div class="footer-inner">
-    <a href="index.html" class="footer-logo">🐾 No<span>Hungry</span>Pets</a>
+    <a href="/" class="footer-logo">🐾 No<span>Hungry</span>Pets</a>
     <div class="footer-links">
-      <a href="index.html">Home</a>
-      <a href="listings.html">Listings</a>
-      <a href="post.html">Post</a>
-      <a href="map.html">Map</a>
+      <a href="/">Home</a>
+      <a href="/listings">Listings</a>
+      <a href="/post">Post</a>
+      <a href="/map">Map</a>
     </div>
     <div class="footer-copy">© 2026 NoHungryPets.co.uk · Helping pets eat, one bowl at a time 🐾</div>
   </div>
@@ -568,7 +568,7 @@
   const user = firebase.auth().currentUser;
   if (!user) {
     showToast('Please log in to claim a listing 🐾', 'error');
-    setTimeout(() => window.location.href = 'login.html', 1500);
+    setTimeout(() => window.location.href = '/login', 1500);
     return;
   }
 
