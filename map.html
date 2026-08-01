@@ -204,6 +204,16 @@
   const searchBtn = document.getElementById('location-search-btn');
   if (!el || !window.L) return;
 
+  // Tracks the "Your location" marker so repeat searches replace it
+  // instead of stacking up a new dot on the map each time.
+  let originMarker = null;
+  function clearOriginMarker() {
+    if (originMarker) {
+      map.removeLayer(originMarker);
+      originMarker = null;
+    }
+  }
+
   const animalEmojis = {
     'Dog':'🦴','Cat':'🐟','Rabbit':'🥬',
     'Small pets':'🌾','Bird':'🐦','Reptile':'🦎',
@@ -372,6 +382,7 @@
 
   // Fallback view: fit map to all markers, list newest-first.
   function showAll() {
+    clearOriginMarker();
     const points = listings.map(l => [l.coords.lat, l.coords.lng]);
     if (points.length === 1) {
       map.setView(points[0], 14);
@@ -395,7 +406,8 @@
       return;
     }
     map.setView([origin.lat, origin.lng], 11, { animate: true });
-    L.circleMarker([origin.lat, origin.lng], {
+    clearOriginMarker();
+    originMarker = L.circleMarker([origin.lat, origin.lng], {
       radius: 8, color: '#E8733A', fillColor: '#E8733A', fillOpacity: 0.9, weight: 2
     }).addTo(map).bindPopup('<b>Your location</b>');
     renderList(origin);
