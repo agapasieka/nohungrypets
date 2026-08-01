@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 2026 NoHungryPets -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Stats – NoHungryPets</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .wrap { max-width: 1000px; margin: 0 auto; padding: 0 2.5rem 5rem; }
+    .card {
+      background: white; border-radius: 24px; padding: 2rem;
+      box-shadow: var(--card-shadow); margin-bottom: 1.5rem;
+    }
+    .card h2 {
+      margin: 0 0 0.35rem;
+      font-family: 'Fraunces', serif; color: var(--brown);
+      font-weight: 900; font-size: 1.4rem;
+    }
+    .card > p { margin: 0 0 1rem; color: var(--brown-mid); font-weight: 500; line-height: 1.6; }
+
+    .stat-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem;
+    }
+    .stat-tile {
+      text-align: center; padding: 1.75rem 1rem;
+      background: var(--cream); border-radius: 18px;
+    }
+    .stat-num {
+      font-family: 'Fraunces', serif; font-size: 2.6rem;
+      font-weight: 900; color: var(--orange); line-height: 1;
+    }
+    .stat-label {
+      font-size: 0.8rem; color: var(--muted); font-weight: 600;
+      margin-top: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .loading .stat-num { color: var(--muted); }
+
+    .cta-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.5rem; }
+    .checking { text-align: center; padding: 4rem 1rem; color: var(--muted); font-weight: 600; }
+    .hidden { display: none; }
+    @media (max-width: 700px) {
+      .wrap { padding: 0 1.5rem 4rem; }
+      .stat-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">🐾 No<span>Hungry</span>Pets</a>
+  <div class="nav-links">
+    <a href="listings.html">Browse listings</a>
+    <a href="map.html">Map view</a>
+    <a href="post.html">Post a listing</a>
+    <a href="profile.html">My account</a>
+    <a href="post.html" class="btn-nav">+ Post free</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="page-header-inner">
+    <div class="page-tag">✦ Admin</div>
+    <h1>Platform <em>stats</em></h1>
+    <p>Running totals of activity across NoHungryPets. Visible to the site owner only.</p>
+  </div>
+</div>
+
+<main class="wrap">
+  <!-- Shown while auth is resolving / before admin check passes -->
+  <div id="checking" class="checking">Checking access…</div>
+
+  <!-- Admin dashboard (revealed only for the admin UID) -->
+  <div id="dashboard" class="hidden">
+    <section class="card">
+      <h2>Community totals</h2>
+      <p>Denormalised counters, incremented in real time as each event happens.</p>
+      <div class="stat-grid loading" id="stat-grid">
+        <div class="stat-tile">
+          <div class="stat-num" id="stat-users">—</div>
+          <div class="stat-label">Total signups</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-num" id="stat-listings">—</div>
+          <div class="stat-label">Listings posted</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-num" id="stat-claims">—</div>
+          <div class="stat-label">Items claimed</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Traffic &amp; behaviour</h2>
+      <p>Page views, sessions, sources and device data are tracked with Firebase Analytics (GA4) and live in the Firebase / Google Analytics dashboard.</p>
+      <div class="cta-row">
+        <a class="btn-primary" href="https://console.firebase.google.com/project/nohungrypets/analytics" target="_blank" rel="noopener">Open Analytics dashboard →</a>
+        <a class="btn-secondary" href="index.html">Back to site</a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <a href="index.html" class="footer-logo">🐾 No<span>Hungry</span>Pets</a>
+    <div class="footer-links">
+      <a href="about.html">About</a>
+      <a href="index.html#how">How it works</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="contact.html">Contact</a>
+    </div>
+    <div class="footer-copy">© 2026 NoHungryPets.co.uk · Helping pets eat, one bowl at a time 🐾</div>
+  </div>
+</footer>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  // Hardcoded site-owner UID (a Firebase Auth UID, not a secret). Non-admins
+  // are redirected away client-side; firestore.rules also blocks non-admin reads.
+  const ADMIN_UID = 'YVK880UJPFOaqwB2uk1lddqF2fK2';
+
+  auth.onAuthStateChanged(async (user) => {
+    if (!user || user.uid !== ADMIN_UID) {
+      window.location.href = 'index.html';
+      return;
+    }
+
+    // Passed the gate — reveal the dashboard and load the counters.
+    document.getElementById('checking').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+
+    try {
+      const doc = await db.collection('stats').doc('global').get();
+      const data = doc.exists ? doc.data() : {};
+      document.getElementById('stat-users').textContent    = data.totalUsers    || 0;
+      document.getElementById('stat-listings').textContent = data.totalListings || 0;
+      document.getElementById('stat-claims').textContent   = data.totalClaims   || 0;
+      document.getElementById('stat-grid').classList.remove('loading');
+    } catch (err) {
+      console.error('Error loading stats:', err);
+      document.getElementById('stat-users').textContent    = '!';
+      document.getElementById('stat-listings').textContent = '!';
+      document.getElementById('stat-claims').textContent   = '!';
+    }
+  });
+</script>
+</body>
+</html>

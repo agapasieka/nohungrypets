@@ -442,6 +442,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
 
 <script>
   // ── FIREBASE INIT ──────────────────────────────────────
@@ -451,11 +452,35 @@
     projectId: "nohungrypets",
     storageBucket: "nohungrypets.firebasestorage.app",
     messagingSenderId: "145249046661",
-    appId: "1:145249046661:web:11c30f62ce646db13159ec"
+    appId: "1:145249046661:web:11c30f62ce646db13159ec",
+    measurementId: "G-WPJ1HRHN87"
   };
   if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db   = firebase.firestore();
+
+  // ── ANALYTICS (GA4) — guarded so the placeholder ID never breaks the page ──
+  try {
+    if (typeof firebase.analytics === 'function'
+        && firebaseConfig.measurementId
+        && firebaseConfig.measurementId !== 'G-XXXXXXXXXX') {
+      firebase.analytics();
+    }
+  } catch (err) {
+    console.warn('Firebase Analytics init skipped:', err);
+  }
+
+  // ── GLOBAL PLATFORM STATS — lazily creates stats/global via set+merge ──
+  async function bumpGlobalStat(field) {
+    try {
+      await db.collection('stats').doc('global').set(
+        { [field]: firebase.firestore.FieldValue.increment(1) },
+        { merge: true }
+      );
+    } catch (err) {
+      console.error('Error incrementing global stat:', field, err);
+    }
+  }
 
   let isAuthProcessing = false;
 
@@ -563,6 +588,8 @@
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         listings: 0, claims: 0
       });
+      // Bump global signup counter (vanity metric for admin dashboard)
+      bumpGlobalStat('totalUsers');
       showToast('🎉 Welcome to NoHungryPets, ' + name + '!', 'success');
       setTimeout(() => window.location.href = 'profile.html', 1200);
     } catch (err) {
@@ -615,6 +642,8 @@
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           listings: 0, claims: 0
         });
+        // Bump global signup counter (vanity metric for admin dashboard)
+        bumpGlobalStat('totalUsers');
       }
       showToast('Signed in with Google! 🐾', 'success');
       setTimeout(() => window.location.href = 'profile.html', 1000);
