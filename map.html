@@ -14,7 +14,7 @@
     crossorigin=""
   />
   <style>
-    .wrap { max-width: 1100px; margin: 0 auto; padding: 0 2.5rem 5rem; }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 0 2.5rem 5rem; }
     .card {
       background: white; border-radius: 24px; padding: 2rem;
       box-shadow: var(--card-shadow);
@@ -28,18 +28,102 @@
       font-size: 1.6rem;
     }
     .card p { margin: 0 0 1.25rem; color: var(--brown-mid); font-weight: 500; line-height: 1.6; }
+
+    /* POSTCODE SEARCH */
+    .location-search {
+      display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1rem;
+    }
+    .location-search input {
+      flex: 1 1 220px; min-width: 0;
+      padding: 0.8rem 1rem; border-radius: 12px;
+      border: 1px solid rgba(61,43,31,0.15);
+      font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
+      color: var(--brown); background: var(--cream);
+    }
+    .location-search input:focus { outline: none; border-color: var(--orange); }
+    .location-search button {
+      flex: 0 0 auto; padding: 0.8rem 1.3rem; border-radius: 12px;
+      border: none; cursor: pointer; background: var(--orange); color: white;
+      font-family: 'DM Sans', sans-serif; font-weight: 800; font-size: 0.9rem;
+      transition: background 0.2s;
+    }
+    .location-search button:hover { background: var(--orange-deep); }
+
+    .map-status {
+      font-size: 0.85rem; color: var(--muted);
+      margin-bottom: 1rem;
+    }
+
+    /* TWO-COLUMN LAYOUT: map + list */
+    .map-layout {
+      display: grid; grid-template-columns: 1.6fr 1fr; gap: 1.25rem;
+      align-items: stretch;
+    }
     #map {
-      height: 480px;
+      height: 560px;
       border-radius: 18px;
       border: 1px solid rgba(61,43,31,0.10);
       overflow: hidden;
       z-index: 0; /* keeps map tiles below page elements */
     }
-    .map-status {
-      font-size: 0.85rem; color: var(--muted);
-      margin-bottom: 1rem;
+    .listings-column {
+      height: 560px; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 0.75rem;
+      padding-right: 0.35rem;
     }
+    .listings-column-empty {
+      display: flex; align-items: center; justify-content: center;
+      text-align: center; color: var(--muted); font-size: 0.9rem;
+      height: 100%; padding: 1.5rem;
+    }
+
+    /* LIST CARD (mirrors listings.html .listing-card, compact horizontal) */
+    .map-listing-card {
+      display: flex; gap: 0.9rem; align-items: stretch;
+      background: white; border-radius: 16px; overflow: hidden;
+      box-shadow: var(--card-shadow); cursor: pointer;
+      border: 1px solid transparent;
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+      text-align: left; width: 100%; font-family: 'DM Sans', sans-serif;
+    }
+    .map-listing-card:hover,
+    .map-listing-card.active {
+      transform: translateY(-2px); box-shadow: 0 10px 30px rgba(61,43,31,0.14);
+      border-color: rgba(232,115,58,0.45);
+    }
+    .map-listing-card-img {
+      width: 84px; flex-shrink: 0; display: flex;
+      align-items: center; justify-content: center; font-size: 2rem;
+    }
+    .map-listing-card-img img { width: 100%; height: 100%; object-fit: cover; }
+    .bg-1 { background: linear-gradient(135deg,#FEF3EC,#FDDEC8); }
+    .bg-2 { background: linear-gradient(135deg,#EAF3EC,#C8E6CC); }
+    .bg-3 { background: linear-gradient(135deg,#FEF3EC,#FFE4D6); }
+    .bg-4 { background: linear-gradient(135deg,#EDF4FF,#C8DCFF); }
+    .bg-5 { background: linear-gradient(135deg,#FFF8EC,#FFE8B0); }
+    .bg-6 { background: linear-gradient(135deg,#F3ECFE,#DEC8FF); }
+    .map-listing-card-body {
+      flex: 1; min-width: 0; padding: 0.7rem 0.9rem 0.7rem 0;
+      display: flex; flex-direction: column; gap: 0.25rem;
+    }
+    .map-listing-card-body h4 {
+      font-family: 'Fraunces', serif; font-weight: 700;
+      font-size: 0.92rem; color: var(--brown); margin: 0;
+      line-height: 1.3;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .map-listing-meta { font-size: 0.75rem; color: var(--muted); }
+    .map-listing-distance {
+      font-size: 0.75rem; font-weight: 800; color: var(--green);
+    }
+
     .cta-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.25rem; }
+
+    @media (max-width: 900px) {
+      .map-layout { grid-template-columns: 1fr; }
+      #map { height: 380px; }
+      .listings-column { height: auto; max-height: 460px; }
+    }
     @media (max-width: 800px) { .wrap { padding: 0 1.5rem 4rem; } }
   </style>
 </head>
@@ -66,9 +150,18 @@
 
 <main class="wrap">
   <section class="card">
-    <h2>Live listings</h2>
+    <h2>Listings around you</h2>
+    <p>Enter your postcode or town to see the closest available listings first.</p>
+    <div class="location-search">
+      <input type="text" id="location-input" aria-label="Your postcode or town"
+        placeholder="e.g. DE14 1AA or Burton upon Trent"/>
+      <button type="button" id="location-search-btn">🔍 Find nearby</button>
+    </div>
     <p class="map-status" id="map-status">Loading listings...</p>
-    <div id="map" aria-label="Map showing listings"></div>
+    <div class="map-layout">
+      <div id="map" aria-label="Map showing listings"></div>
+      <div class="listings-column" id="listings-column" aria-label="List of nearby listings"></div>
+    </div>
     <div class="cta-row">
       <a class="btn-primary" href="/listings">Browse listings</a>
       <a class="btn-secondary" href="/">Back to home</a>
@@ -106,7 +199,26 @@
 (async function () {
   const el = document.getElementById('map');
   const statusEl = document.getElementById('map-status');
+  const listEl = document.getElementById('listings-column');
+  const inputEl = document.getElementById('location-input');
+  const searchBtn = document.getElementById('location-search-btn');
   if (!el || !window.L) return;
+
+  // Tracks the "Your location" marker so repeat searches replace it
+  // instead of stacking up a new dot on the map each time.
+  let originMarker = null;
+  function clearOriginMarker() {
+    if (originMarker) {
+      map.removeLayer(originMarker);
+      originMarker = null;
+    }
+  }
+
+  const animalEmojis = {
+    'Dog':'🦴','Cat':'🐟','Rabbit':'🥬',
+    'Small pets':'🌾','Bird':'🐦','Reptile':'🦎',
+    'Fish':'🐟','Horse':'🌿','Farm animal':'🌿'
+  };
 
   // Default centre — UK midpoint
   const map = L.map('map', { scrollWheelZoom: false }).setView([52.5, -1.5], 7);
@@ -116,8 +228,10 @@
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'
   }).addTo(map);
 
-  // Geocode a UK postcode using postcodes.io (free, no key needed)
+  // Geocode a UK postcode using postcodes.io (free, no key needed).
+  // Accepts a full postcode; falls back to a place-name/outward-code query.
   async function geocodePostcode(postcode) {
+    if (!postcode) return null;
     try {
       const res = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(postcode)}`);
       const data = await res.json();
@@ -125,7 +239,33 @@
         return { lat: data.result.latitude, lng: data.result.longitude };
       }
     } catch (e) {}
+    // Fallback: try a fuzzy place/postcode lookup (handles towns & partial codes)
+    try {
+      const res = await fetch(`https://api.postcodes.io/postcodes?q=${encodeURIComponent(postcode)}&limit=1`);
+      const data = await res.json();
+      if (data.status === 200 && data.result && data.result.length) {
+        return { lat: data.result[0].latitude, lng: data.result[0].longitude };
+      }
+    } catch (e) {}
     return null;
+  }
+
+  // Haversine distance in miles between two lat/lng points.
+  function haversineMiles(a, b) {
+    const toRad = deg => deg * Math.PI / 180;
+    const R = 3958.8; // Earth radius in miles
+    const dLat = toRad(b.lat - a.lat);
+    const dLng = toRad(b.lng - a.lng);
+    const lat1 = toRad(a.lat), lat2 = toRad(b.lat);
+    const h = Math.sin(dLat / 2) ** 2 +
+      Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(h));
+  }
+
+  function formatDistance(miles) {
+    if (miles < 0.1) return 'Nearby';
+    if (miles < 10) return `${miles.toFixed(1)} mi`;
+    return `${Math.round(miles)} mi`;
   }
 
   // Load available listings from Firestore
@@ -136,16 +276,20 @@
       .get();
   } catch (e) {
     statusEl.textContent = 'Could not load listings.';
+    listEl.innerHTML = '<div class="listings-column-empty">Could not load listings.</div>';
     return;
   }
 
   if (snapshot.empty) {
     statusEl.textContent = 'No available listings at the moment.';
+    listEl.innerHTML = '<div class="listings-column-empty">No available listings at the moment.</div>';
     map.setView([52.5, -1.5], 7);
     return;
   }
 
-  const markers = [];
+  // Geocode every listing and build a data model shared by map + list.
+  // Each entry: { data, coords, marker, createdMillis }
+  const listings = [];
   const promises = snapshot.docs.map(async (doc) => {
     const d = doc.data();
     if (!d.postcode) return;
@@ -171,25 +315,128 @@
     `;
 
     const marker = L.marker([coords.lat, coords.lng]).addTo(map).bindPopup(html);
-    markers.push([coords.lat, coords.lng]);
+    const createdMillis = (d.createdAt && d.createdAt.toMillis) ? d.createdAt.toMillis() : 0;
+    listings.push({ data: d, coords, marker, createdMillis });
   });
 
   await Promise.all(promises);
 
-  if (markers.length === 0) {
+  if (listings.length === 0) {
     statusEl.textContent = 'No listings could be placed on the map.';
+    listEl.innerHTML = '<div class="listings-column-empty">No listings could be placed on the map.</div>';
     return;
   }
 
-  statusEl.textContent = `${markers.length} available listing${markers.length !== 1 ? 's' : ''} on the map`;
+  // Render the list column. If `origin` is provided, sort by distance
+  // ascending and show a distance badge; otherwise fall back to
+  // newest-first (matching the pre-list behaviour of showing everything).
+  function renderList(origin) {
+    const ordered = listings.slice();
+    if (origin) {
+      ordered.forEach(l => { l.distance = haversineMiles(origin, l.coords); });
+      ordered.sort((a, b) => a.distance - b.distance);
+    } else {
+      ordered.forEach(l => { l.distance = null; });
+      ordered.sort((a, b) => b.createdMillis - a.createdMillis);
+    }
 
-  // Fit map to all markers
-  if (markers.length === 1) {
-    map.setView(markers[0], 14);
-  } else {
-    const bounds = L.latLngBounds(markers);
-    map.fitBounds(bounds.pad(0.25));
+    listEl.innerHTML = ordered.map((l, i) => {
+      const d = l.data;
+      const bgClass = `bg-${(i % 6) + 1}`;
+      const animal = d.animals && d.animals.length ? d.animals[0] : null;
+      let imgContent = animalEmojis[animal] || '📦';
+      if (d.imageUrls && d.imageUrls.length) {
+        imgContent = `<img src="${d.imageUrls[0]}" alt="">`;
+      }
+      const animalLabel = animal || 'Pet';
+      const distanceHtml = l.distance != null
+        ? `<div class="map-listing-distance">📍 ${formatDistance(l.distance)}</div>`
+        : `<div class="map-listing-meta">📍 ${d.postcode || 'Nearby'}</div>`;
+      // markerIndex points back into the shared `listings` array
+      const markerIndex = listings.indexOf(l);
+      return `
+        <button type="button" class="map-listing-card" data-marker-index="${markerIndex}">
+          <div class="map-listing-card-img ${bgClass}">${imgContent}</div>
+          <div class="map-listing-card-body">
+            <h4>${d.itemName || 'Item'}</h4>
+            <div class="map-listing-meta">${animalLabel} · Free</div>
+            ${distanceHtml}
+          </div>
+        </button>
+      `;
+    }).join('');
   }
+
+  // Wire list ↔ map: clicking a card pans to that marker and opens its popup.
+  listEl.addEventListener('click', (e) => {
+    const card = e.target.closest('.map-listing-card');
+    if (!card) return;
+    const idx = parseInt(card.getAttribute('data-marker-index'), 10);
+    const l = listings[idx];
+    if (!l) return;
+    listEl.querySelectorAll('.map-listing-card.active').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+    map.setView([l.coords.lat, l.coords.lng], 14, { animate: true });
+    l.marker.openPopup();
+  });
+
+  // Fallback view: fit map to all markers, list newest-first.
+  function showAll() {
+    clearOriginMarker();
+    const points = listings.map(l => [l.coords.lat, l.coords.lng]);
+    if (points.length === 1) {
+      map.setView(points[0], 14);
+    } else {
+      map.fitBounds(L.latLngBounds(points).pad(0.25));
+    }
+    renderList(null);
+    statusEl.textContent =
+      `${listings.length} available listing${listings.length !== 1 ? 's' : ''} — enter a postcode to sort by distance`;
+  }
+
+  // Apply a searched/origin location: center map, sort list by distance.
+  async function applyLocation(postcode) {
+    const query = (postcode || '').trim();
+    if (!query) { showAll(); return; }
+    statusEl.textContent = 'Finding listings near you...';
+    const origin = await geocodePostcode(query);
+    if (!origin) {
+      statusEl.textContent = `Couldn't find "${query}". Showing all listings.`;
+      showAll();
+      return;
+    }
+    map.setView([origin.lat, origin.lng], 11, { animate: true });
+    clearOriginMarker();
+    originMarker = L.circleMarker([origin.lat, origin.lng], {
+      radius: 8, color: '#E8733A', fillColor: '#E8733A', fillOpacity: 0.9, weight: 2
+    }).addTo(map).bindPopup('<b>Your location</b>');
+    renderList(origin);
+    statusEl.textContent =
+      `${listings.length} available listing${listings.length !== 1 ? 's' : ''}, sorted by distance from ${query}`;
+  }
+
+  // Manual search handlers
+  searchBtn.addEventListener('click', () => applyLocation(inputEl.value));
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') applyLocation(inputEl.value);
+  });
+
+  // Initial render: show everything (fallback) until we know the user's postcode.
+  showAll();
+
+  // Pre-fill + auto-sort from the signed-in user's saved profile postcode.
+  onAuthChange(async (user) => {
+    if (!user) return;
+    try {
+      const profile = await getUserProfile(user.uid);
+      if (profile && profile.postcode && !inputEl.value.trim()) {
+        inputEl.value = profile.postcode;
+        applyLocation(profile.postcode);
+      }
+    } catch (e) {
+      // Non-fatal: the manual search still works.
+    }
+  });
 })();
 </script>
 </body>
