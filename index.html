@@ -697,6 +697,10 @@
           <div class="stat-num">Local</div>
           <div class="stat-label">Your neighbourhood</div>
         </div>
+        <div class="stat" id="stat-shared" style="display:none;">
+          <div class="stat-num" id="stat-shared-num">—</div>
+          <div class="stat-label">Food items shared</div>
+        </div>
       </div>
       <div class="hero-donate">
         <p style="text-align:center; margin-top:2rem; font-size:0.94rem; color:var(--brown-mid); max-width:480px;">
@@ -1177,7 +1181,25 @@
   });
   loadRecentListings();
   initNearbyListingsBadge();
+  loadSharedCounter();
 });
+
+  // ── PUBLIC "FOOD ITEMS SHARED" COUNTER ───────────────────
+  // Reads the public stats/global.totalListings vanity counter and reveals
+  // the hero tile. Fails silently (tile stays hidden) if Firestore is
+  // unreachable or the field is missing — consistent with other pages.
+  async function loadSharedCounter() {
+    try {
+      const snap = await db.collection('stats').doc('global').get();
+      if (!snap.exists) return;
+      const total = snap.data().totalListings;
+      if (typeof total !== 'number' || total <= 0) return;
+      document.getElementById('stat-shared-num').textContent = total.toLocaleString();
+      document.getElementById('stat-shared').style.display = '';
+    } catch (err) {
+      console.error('Error loading shared counter:', err);
+    }
+  }
 
   // ── NEARBY LISTINGS NOTIFICATION ─────────────────────────
   function initNearbyListingsBadge() {

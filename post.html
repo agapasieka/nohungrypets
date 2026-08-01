@@ -621,6 +621,18 @@
       // Bump global listings counter (vanity metric for admin dashboard)
       incrementGlobalStat('totalListings');
 
+      // Celebrate crossing a milestone exactly. The prior count is whatever
+      // we cached for this user (0 for a just-created guest account), + this
+      // post. Fires only on the exact threshold post, not before or after.
+      const prevListings = (cachedUserDoc && typeof cachedUserDoc.listings === 'number')
+        ? cachedUserDoc.listings : 0;
+      const newCount = prevListings + 1;
+      if (getMilestoneInfo(newCount).isExactMilestone) {
+        showToast(`🎉 Milestone! You've helped ${newCount} time${newCount === 1 ? '' : 's'}!`, 'success');
+      }
+      // Keep the cache in sync so a second post in the same session counts correctly.
+      if (cachedUserDoc) cachedUserDoc.listings = newCount;
+
       document.getElementById('form-container').style.display = 'none';
       document.getElementById('success-state').style.display = 'block';
       window.scrollTo({ top: 0, behavior: 'smooth' });
