@@ -10,7 +10,7 @@ const firebaseConfig = {
   storageBucket: "nohungrypets.firebasestorage.app",
   messagingSenderId: "145249046661",
   appId: "1:145249046661:web:11c30f62ce646db13159ec",
-  measurementId: "G-XXXXXXXXXX" // TODO: replace with real measurementId from Firebase Console > Analytics
+  measurementId: "G-WPJ1HRHN87"
 };
 
 // ── INIT (only once) ─────────────────────────────────────
