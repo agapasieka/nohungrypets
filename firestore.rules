@@ -27,15 +27,16 @@ service cloud.firestore {
                     );
     }
 
-    // Global platform stats - denormalised vanity counters for the admin dashboard.
-    // Only the site owner (hardcoded admin UID) may READ the aggregate doc,
-    // but any signed-in user may increment the counters (non-sensitive metrics;
-    // Firebase Analytics remains the authoritative, tamper-proof traffic source).
-    // Writes are restricted to the known counter fields only, so a signed-in user
-    // can't smuggle arbitrary data onto this doc via set(..., {merge:true}).
+    // Global platform stats - denormalised vanity counters.
+    // Publicly READABLE: the homepage surfaces `totalListings` as a public
+    // "X food items shared" milestone number for signed-out visitors, and the
+    // doc holds only non-sensitive vanity counts (no user data). Any signed-in
+    // user may increment the counters (Firebase Analytics remains the
+    // authoritative, tamper-proof traffic source). Writes are restricted to the
+    // known counter fields only, so a signed-in user can't smuggle arbitrary
+    // data onto this doc via set(..., {merge:true}).
     match /stats/global {
-      allow read: if request.auth != null
-                  && request.auth.uid == 'YVK880UJPFOaqwB2uk1lddqF2fK2';
+      allow read: if true;
 
       allow create: if request.auth != null
                     && request.resource.data.keys()

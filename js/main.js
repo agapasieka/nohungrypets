@@ -50,6 +50,37 @@ async function countNearbyNewListings({ db, uid, postcode, sinceMillis }) {
   }
 }
 
+// ── MILESTONES ───────────────────────────────────────────
+// Shared source of truth for listings-posted milestone thresholds.
+// Used by profile.html (badge + progress-to-next) and post.html
+// (one-off celebration toast when a post crosses a threshold exactly).
+const MILESTONES = [1, 5, 10, 25, 50, 100];
+
+// Given a listings-posted count, return milestone framing:
+//   reached          - highest threshold the count has met or passed (0 if none)
+//   next             - next threshold above the count (null once all passed)
+//   toNext           - how many more listings until `next` (null once all passed)
+//   isExactMilestone - true when the count lands exactly on a threshold
+function getMilestoneInfo(count) {
+  const n = Number(count) || 0;
+  let reached = 0;
+  let next = null;
+  for (const m of MILESTONES) {
+    if (n >= m) {
+      reached = m;
+    } else {
+      next = m;
+      break;
+    }
+  }
+  return {
+    reached,
+    next,
+    toNext: next === null ? null : next - n,
+    isExactMilestone: MILESTONES.indexOf(n) !== -1
+  };
+}
+
 // Simple toast notification
 function showToast(msg, type = 'success') {
   const t = document.createElement('div');

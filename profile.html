@@ -60,6 +60,16 @@
       font-weight: 900; color: var(--orange);
     }
     .profile-stat-label { font-size: 0.72rem; color: var(--muted); }
+    .milestone-box {
+      margin-top: 0.9rem; text-align: center;
+      display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+    }
+    .milestone-badge {
+      display: inline-block; padding: 0.3rem 0.85rem; border-radius: 50px;
+      background: var(--green-light); color: var(--green);
+      font-weight: 800; font-size: 0.8rem;
+    }
+    .milestone-next { font-size: 0.72rem; color: var(--muted); }
 
     /* NAV MENU */
     .profile-menu {
@@ -402,6 +412,10 @@
           <div class="profile-stat-label">Items claimed</div>
         </div>
       </div>
+      <div class="milestone-box" id="milestone-box">
+        <span class="milestone-badge" id="milestone-badge" style="display:none;"></span>
+        <span class="milestone-next" id="milestone-next"></span>
+      </div>
     </div>
 
     <div class="profile-menu">
@@ -696,7 +710,27 @@
   let messagesUnsubscribe = null;
   let currentConversationId = null;
   let currentUserId = null;
-  
+
+  // ── MILESTONE BADGE + PROGRESS ─────────────────────────
+  // Uses the shared getMilestoneInfo() helper from main.js so thresholds
+  // stay in sync with the celebration toast on post.html.
+  function renderMilestone(listingsCount) {
+    const info = getMilestoneInfo(listingsCount);
+    const badge = document.getElementById('milestone-badge');
+    const next = document.getElementById('milestone-next');
+    if (info.reached > 0) {
+      badge.textContent = `🏅 ${info.reached}+ helped`;
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
+    }
+    if (info.next !== null) {
+      next.textContent = `${info.toNext} more to go until your next milestone (${info.next})`;
+    } else {
+      next.textContent = "🎉 You've reached every milestone. Thank you!";
+    }
+  }
+
   // ── LOAD USER DATA ─────────────────────────────────────
   onAuthChange(async user => {
     if (!user) {
@@ -720,6 +754,7 @@
     if (profile) {
       document.getElementById('profile-location').textContent = profile.postcode ? '📍 ' + profile.postcode : '📍 Location not set';
       document.getElementById('stat-listings').textContent = profile.listings || 0;
+      renderMilestone(profile.listings || 0);
       document.getElementById('stat-claims').textContent = profile.claims || 0;
       document.getElementById('impact-listings').textContent = profile.listings || 0;
       document.getElementById('impact-claimed').textContent = profile.claims || 0;
@@ -743,6 +778,7 @@
     } else {
       document.getElementById('profile-location').textContent = '📍 Location not set';
       document.getElementById('stat-listings').textContent = '0';
+      renderMilestone(0);
       document.getElementById('stat-claims').textContent = '0';
       document.getElementById('impact-listings').textContent = '0';
       document.getElementById('impact-claimed').textContent = '0';
