@@ -458,7 +458,13 @@
   };
   if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 
-  // ── APP CHECK — monitor-only for now, see js/auth.js for details ──
+  // ── LOCAL EMULATORS — must run before App Check activation, see js/auth.js ──
+  if (window.location.hostname === "localhost") {
+    firebase.auth().useEmulator("http://localhost:9099");
+    firebase.firestore().useEmulator("localhost", 8080);
+  }
+
+  // ── APP CHECK — enforced on Firestore + Identity Toolkit, see js/auth.js ──
   try {
     firebase.appCheck().activate(
       new firebase.appCheck.ReCaptchaV3Provider('6LffoHAtAAAAAKJyIzxclw2Pwv_9uekwUfXn8J_v'),

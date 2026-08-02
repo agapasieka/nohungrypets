@@ -144,23 +144,6 @@
     .btn-sm-delete { background: rgba(232,115,58,0.1); color: var(--orange); }
     .btn-sm-delete:hover { background: var(--orange); color: white; }
 
-    /* ACTIVITY FEED */
-    .activity-feed { display: flex; flex-direction: column; gap: 0.75rem; }
-    .activity-item {
-      display: flex; align-items: flex-start; gap: 0.75rem;
-      padding: 0.75rem; border-radius: 12px; background: var(--cream);
-    }
-    .activity-icon {
-      width: 36px; height: 36px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1rem; flex-shrink: 0;
-    }
-    .act-green { background: var(--green-light); }
-    .act-orange { background: rgba(232,115,58,0.1); }
-    .activity-text { font-size: 0.85rem; color: var(--brown-mid); line-height: 1.5; }
-    .activity-text strong { color: var(--brown); }
-    .activity-time { font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem; }
-
     /* EDIT PROFILE FORM */
     .edit-form { display: none; }
     .edit-form.visible { display: block; }
@@ -421,14 +404,11 @@
     <div class="profile-menu">
       <a href="#" class="menu-item active" onclick="showSection('listings', this)">
         <span class="icon">📦</span> My listings
-        <span class="badge">3</span>
+        <span class="badge" id="listings-menu-badge">0</span>
       </a>
       <a href="/listings" class="menu-item" id="nearby-menu-item" style="display:none;" title="New listings near you">
         <span class="icon">📍</span> New nearby listings
         <span class="badge" id="nearby-badge">0</span>
-      </a>
-      <a href="#" class="menu-item" onclick="showSection('activity', this)">
-        <span class="icon">🔔</span> Activity
       </a>
       <a href="#" class="menu-item" onclick="showSection('impact', this)">
         <span class="icon">🌿</span> My impact
@@ -501,36 +481,6 @@
       </div>
     </div>
 
-    <!-- ACTIVITY SECTION -->
-    <div class="section-card" id="section-activity" style="display:none">
-      <div class="section-card-header">
-        <h3>🔔 Recent activity</h3>
-      </div>
-      <div class="activity-feed">
-        <div class="activity-item">
-          <div class="activity-icon act-green">✅</div>
-          <div>
-            <div class="activity-text"><strong>James T.</strong> claimed your Whiskas Tuna Pouches listing</div>
-            <div class="activity-time">2 hours ago</div>
-          </div>
-        </div>
-        <div class="activity-item">
-          <div class="activity-icon act-orange">📦</div>
-          <div>
-            <div class="activity-text">You posted <strong>Royal Canin Medium Adult 4kg</strong></div>
-            <div class="activity-time">3 hours ago</div>
-          </div>
-        </div>
-        <div class="activity-item">
-          <div class="activity-icon act-green">🎉</div>
-          <div>
-            <div class="activity-text">Welcome to <strong>NoHungryPets</strong>! Your account is ready.</div>
-            <div class="activity-time">Today</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- IMPACT SECTION -->
     <div id="section-impact" style="display:none">
       <div class="impact-card">
@@ -547,25 +497,6 @@
           <div class="impact-item">
             <div class="impact-num">~£12</div>
             <div class="impact-label">Food value shared</div>
-          </div>
-        </div>
-      </div>
-      <div class="section-card" style="margin-top:1.5rem">
-        <div class="section-card-header">
-          <h3>🏅 Badges earned</h3>
-        </div>
-        <div style="display:flex;gap:1rem;flex-wrap:wrap">
-          <div style="text-align:center;padding:1rem;background:var(--cream);border-radius:14px;min-width:100px">
-            <div style="font-size:2rem">🌱</div>
-            <div style="font-size:0.75rem;font-weight:600;color:var(--brown);margin-top:0.3rem">First listing</div>
-          </div>
-          <div style="text-align:center;padding:1rem;background:var(--cream);border-radius:14px;min-width:100px">
-            <div style="font-size:2rem">🤝</div>
-            <div style="font-size:0.75rem;font-weight:600;color:var(--brown);margin-top:0.3rem">First share</div>
-          </div>
-          <div style="text-align:center;padding:1rem;background:rgba(61,43,31,0.04);border-radius:14px;min-width:100px;opacity:0.4">
-            <div style="font-size:2rem">⭐</div>
-            <div style="font-size:0.75rem;font-weight:600;color:var(--muted);margin-top:0.3rem">5 listings</div>
           </div>
         </div>
       </div>
@@ -800,6 +731,7 @@
     listingsContainer.innerHTML = '<p style="padding:1rem;color:var(--muted)">Loading listings...</p>';
     try {
       const snapshot = await db.collection('listings').where('userId', '==', user.uid).get();
+      document.getElementById('listings-menu-badge').textContent = snapshot.size;
       listingsContainer.innerHTML = '';
       if (snapshot.empty) {
         listingsContainer.innerHTML = '<p style="padding:1rem;color:var(--muted)">You haven\'t posted any listings yet.</p>';
@@ -876,7 +808,7 @@
   });
   
   // ── SECTION SWITCHING ──────────────────────────────────
-  const sections = ['listings','activity','impact','messages','settings'];
+  const sections = ['listings','impact','messages','settings'];
   function showSection(name, el) {
     if (el) {
       document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
@@ -965,13 +897,20 @@
       });
       // Bump global claims counter (vanity metric for admin dashboard)
       incrementGlobalStat('totalClaims');
-      try {
-        const conversationId = await window.messaging.getOrCreateConversation(claimantId, ownerId, id, data.itemName || 'Untitled Item');
-        await window.messaging.sendMessage(conversationId, claimantId, `Hi! I've claimed your "${data.itemName || 'item'}". Could we arrange a time for collection?`);
-        showToast('Listing claimed! Message sent to owner.', 'success');
-      } catch (msgErr) {
-        console.error('Messaging error:', msgErr);
-        showToast('Listing claimed! Could not send message.', 'warning');
+      // Only message the owner if someone else actually did the claiming - this
+      // button is also used by the owner to self-mark their own listing as
+      // claimed (e.g. picked up in person), which shouldn't message themselves.
+      if (ownerId && ownerId !== claimantId) {
+        try {
+          const conversationId = await window.messaging.getOrCreateConversation(claimantId, ownerId, id, data.itemName || 'Untitled Item');
+          await window.messaging.sendMessage(conversationId, claimantId, `Hi! I've claimed your "${data.itemName || 'item'}". Could we arrange a time for collection?`);
+          showToast('Listing claimed! Message sent to owner.', 'success');
+        } catch (msgErr) {
+          console.error('Messaging error:', msgErr);
+          showToast('Listing claimed! Could not send message.', 'warning');
+        }
+      } else {
+        showToast('Listing marked as claimed.', 'success');
       }
       const span = btn.parentElement.previousElementSibling.querySelector('.status-span');
       span.style.color = 'var(--orange)';

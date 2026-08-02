@@ -37,11 +37,11 @@ if (!firebase.apps.length) {
 }
 
 // ── APP CHECK ─────────────────────────────────────────────
-// Attaches App Check tokens to Firebase requests. Enforcement is OFF at
-// the backend for now (monitor-only) — this just starts populating the
-// Firebase Console App Check metrics so real traffic can be confirmed as
-// verified before enforcement is switched on. Guarded like Analytics below
-// so a bad/missing site key never breaks page load.
+// Attaches App Check tokens to Firebase requests. Enforcement is ON for
+// Firestore + Identity Toolkit (switched on 2026-08-01, see claude-docs
+// plan doc) — this activation is what obtains the token attached to every
+// request. Guarded like Analytics below so a bad/missing site key never
+// breaks page load.
 try {
   firebase.appCheck().activate(
     new firebase.appCheck.ReCaptchaV3Provider('6LffoHAtAAAAAKJyIzxclw2Pwv_9uekwUfXn8J_v'),
