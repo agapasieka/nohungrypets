@@ -460,6 +460,24 @@
       display: grid; grid-template-columns: 1fr 1.4fr;
       gap: 4rem; align-items: center;
     }
+    .location-search {
+      display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.9rem;
+    }
+    .location-search input {
+      flex: 1 1 220px; min-width: 0;
+      padding: 0.8rem 1rem; border-radius: 12px;
+      border: 1px solid rgba(61,43,31,0.15);
+      font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
+      color: var(--brown); background: white;
+    }
+    .location-search input:focus { outline: none; border-color: var(--orange); }
+    .location-search button {
+      flex: 0 0 auto; padding: 0.8rem 1.3rem; border-radius: 12px;
+      border: none; cursor: pointer; background: var(--orange); color: white;
+      font-family: 'DM Sans', sans-serif; font-weight: 800; font-size: 0.9rem;
+      transition: background 0.2s;
+    }
+    .location-search button:hover { background: var(--orange-deep); }
 
     .map-features h2 {
       font-family: 'Fraunces', serif; font-size: 2.4rem;
@@ -804,7 +822,14 @@
 <!-- MAP SECTION -->
 <section class="map-section" id="map">
   <div class="map-section-inner">
-    <div id="leaflet-map" style="height:420px; border-radius:24px; box-shadow: var(--card-shadow); border: 1px solid rgba(61,43,31,0.10); overflow:hidden; z-index:0;"></div>
+    <div>
+      <div class="location-search">
+        <input type="text" id="home-map-location-input" aria-label="Your postcode or town"
+          placeholder="e.g. DE14 1AA or Burton upon Trent"/>
+        <button type="button" id="home-map-search-btn">🔍 Find nearby</button>
+      </div>
+      <div id="leaflet-map" style="height:420px; border-radius:24px; box-shadow: var(--card-shadow); border: 1px solid rgba(61,43,31,0.10); overflow:hidden; z-index:0;"></div>
+    </div>
 
     <div class="map-features">
       <div class="section-tag">✦ Find nearby</div>
@@ -1285,6 +1310,7 @@
   }).addTo(map);
 
   async function geocodePostcode(postcode) {
+    if (!postcode) return null;
     try {
       const res = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(postcode)}`);
       const data = await res.json();
@@ -1292,7 +1318,47 @@
         return { lat: data.result.latitude, lng: data.result.longitude };
       }
     } catch (e) {}
+    // Fallback: try a fuzzy place/postcode lookup (handles towns & partial codes)
+    try {
+      const res = await fetch(`https://api.postcodes.io/postcodes?q=${encodeURIComponent(postcode)}&limit=1`);
+      const data = await res.json();
+      if (data.status === 200 && data.result && data.result.length) {
+        return { lat: data.result[0].latitude, lng: data.result[0].longitude };
+      }
+    } catch (e) {}
     return null;
+  }
+
+  // ── POSTCODE/TOWN SEARCH ──────────────────────────────
+  // Independent of the listings-loading logic below (which can fail/return
+  // early on a Firestore error) - search only needs the map and the
+  // geocoder, so it's wired up before anything that could short-circuit.
+  // Just recenters this preview map - the full distance-sorted list of
+  // nearby listings lives on /map, not duplicated here.
+  const searchInput = document.getElementById('home-map-location-input');
+  const searchBtn = document.getElementById('home-map-search-btn');
+  async function searchLocation(query) {
+    const q = (query || '').trim();
+    if (!q) return;
+    const coords = await geocodePostcode(q);
+    if (coords) map.setView([coords.lat, coords.lng], 12, { animate: true });
+  }
+  if (searchBtn && searchInput) {
+    searchBtn.addEventListener('click', () => searchLocation(searchInput.value));
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') searchLocation(searchInput.value);
+    });
+    // Pre-fill from the signed-in user's saved postcode, if any.
+    onAuthChange(async (user) => {
+      if (!user) return;
+      try {
+        const profile = await getUserProfile(user.uid);
+        if (profile && profile.postcode && !searchInput.value.trim()) {
+          searchInput.value = profile.postcode;
+          searchLocation(profile.postcode);
+        }
+      } catch (e) {}
+    });
   }
 
   // Wait for Firebase db to be ready
@@ -1302,8 +1368,6 @@
     }, 100);
     setTimeout(() => { clearInterval(check); resolve(); }, 5000);
   });
-
-  if (!window.db) return;
 
   let snapshot;
   try {
