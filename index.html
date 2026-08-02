@@ -839,8 +839,8 @@
     <h2>Be part of something <em>good</em></h2>
     <p>Join pet owners helping each other out. It's free, it's local, and every bowl filled is a pet that didn't go hungry today.</p>
     <div class="signup-form">
-      <input type="email" placeholder="Your email address..." />
-      <button class="btn-primary" onclick="window.location.href='/login'">Get started free</button>
+      <input type="email" id="hero-signup-email" placeholder="Your email address..." />
+      <button class="btn-primary" onclick="startSignup()">Get started free</button>
     </div>
     <div class="trust-badges">
       <div class="trust-item"><span>✓</span> Free forever</div>
@@ -1192,6 +1192,14 @@
   initNearbyListingsBadge();
   loadSharedCounter();
 });
+
+  // ── HERO SIGNUP CTA ───────────────────────────────────────
+  // Carries whatever the visitor typed here through to the signup form on
+  // /login instead of discarding it - avoids making them retype their email.
+  function startSignup() {
+    const email = document.getElementById('hero-signup-email').value.trim();
+    window.location.href = email ? `/login?email=${encodeURIComponent(email)}` : '/login';
+  }
 
   // ── PUBLIC "FOOD ITEMS SHARED" COUNTER ───────────────────
   // Reads the public stats/global.totalListings vanity counter and reveals

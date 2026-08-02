@@ -509,6 +509,11 @@
     }
   });
 
+  // Pre-fill from the hero signup CTA on index.html (?email=...) so visitors
+  // don't have to retype what they already entered there.
+  const prefillEmail = new URLSearchParams(window.location.search).get('email');
+  if (prefillEmail) document.getElementById('signup-email').value = prefillEmail;
+
   // ── TABS ───────────────────────────────────────────────
   function showTab(name, btn) {
     document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
