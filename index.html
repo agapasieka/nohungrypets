@@ -1071,10 +1071,13 @@
         '<p style="color:var(--orange);font-size:0.85rem">Please enter a postcode or town.</p>';
       return;
     }
-    const encoded = encodeURIComponent(input);
+    // Documented Google Maps "search action" URL (api=1) rather than the
+    // undocumented /maps/search/<path text> form - avoids mixing literal
+    // "+" characters with encodeURIComponent's %20 in the same segment.
+    const mapsSearch = (query) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
     document.getElementById('donation-results').innerHTML = `
       <div style="display:flex;flex-direction:column;gap:0.75rem">
-        <a href="https://www.google.com/maps/search/pet+food+bank+near+${encoded}"
+        <a href="${mapsSearch(`pet food bank near ${input}`)}"
           target="_blank" rel="noopener noreferrer"
           style="display:flex;align-items:center;gap:1rem;padding:1rem;background:var(--cream);border-radius:12px;text-decoration:none"
           onmouseover="this.style.background='var(--warm)'" onmouseout="this.style.background='var(--cream)'">
@@ -1084,7 +1087,7 @@
             <div style="font-size:0.78rem;color:var(--muted)">Search on Google Maps →</div>
           </div>
         </a>
-        <a href="https://www.google.com/maps/search/animal+shelter+near+${encoded}"
+        <a href="${mapsSearch(`animal shelter near ${input}`)}"
           target="_blank" rel="noopener noreferrer"
           style="display:flex;align-items:center;gap:1rem;padding:1rem;background:var(--cream);border-radius:12px;text-decoration:none"
           onmouseover="this.style.background='var(--warm)'" onmouseout="this.style.background='var(--cream)'">
@@ -1094,7 +1097,7 @@
             <div style="font-size:0.78rem;color:var(--muted)">Search on Google Maps →</div>
           </div>
         </a>
-        <a href="https://www.google.com/maps/search/RSPCA+near+${encoded}"
+        <a href="${mapsSearch(`RSPCA near ${input}`)}"
           target="_blank" rel="noopener noreferrer"
           style="display:flex;align-items:center;gap:1rem;padding:1rem;background:var(--cream);border-radius:12px;text-decoration:none"
           onmouseover="this.style.background='var(--warm)'" onmouseout="this.style.background='var(--cream)'">
@@ -1104,7 +1107,7 @@
             <div style="font-size:0.78rem;color:var(--muted)">Search on Google Maps →</div>
           </div>
         </a>
-        <a href="https://www.pdsa.org.uk/about-us/our-pet-hospitals/find-a-pdsa-pet-hospital"
+        <a href="https://www.pdsa.org.uk/near-me"
           target="_blank" rel="noopener noreferrer"
           style="display:flex;align-items:center;gap:1rem;padding:1rem;background:var(--cream);border-radius:12px;text-decoration:none"
           onmouseover="this.style.background='var(--warm)'" onmouseout="this.style.background='var(--cream)'">
