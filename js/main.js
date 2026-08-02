@@ -98,8 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const isStandalone = window.navigator.standalone === true
     || window.matchMedia('(display-mode: standalone)').matches;
-  const dismissed = localStorage.getItem('nhp-ios-install-dismissed');
-  if (!isIOS || isStandalone || dismissed) return;
+  if (!isIOS || isStandalone) return;
 
   // -webkit-transform forces its own compositing layer - the standard fix
   // for iOS Safari's well-documented bug where position:fixed elements
@@ -118,8 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
     <button type="button" aria-label="Dismiss" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:1.1rem;cursor:pointer;padding:0.25rem;line-height:1">✕</button>
   `;
   banner.querySelector('button').addEventListener('click', () => {
-    localStorage.setItem('nhp-ios-install-dismissed', '1');
-    banner.remove();
+    banner.remove(); // dismiss for this page view only - reappears on refresh/next page
   });
   document.body.appendChild(banner);
 });
