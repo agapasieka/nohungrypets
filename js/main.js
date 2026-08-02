@@ -101,13 +101,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const dismissed = localStorage.getItem('nhp-ios-install-dismissed');
   if (!isIOS || isStandalone || dismissed) return;
 
+  // -webkit-transform forces its own compositing layer - the standard fix
+  // for iOS Safari's well-documented bug where position:fixed elements
+  // glitch/vanish when the address bar auto-collapses a few seconds after
+  // load, independent of any scrolling or tapping.
   const banner = document.createElement('div');
   banner.style.cssText = `
-    position:fixed; left:1rem; right:1rem; bottom:1rem; z-index:9999;
+    position:fixed; left:1rem; right:1rem; bottom:max(1rem, env(safe-area-inset-bottom)); z-index:9999;
     background:#3D2B1F; color:white; border-radius:16px;
     padding:0.9rem 1.1rem; display:flex; align-items:center; gap:0.75rem;
     box-shadow:0 8px 32px rgba(0,0,0,0.25); font-size:0.85rem;
-    animation: fadeUp 0.3s ease both;
+    -webkit-transform:translateZ(0); transform:translateZ(0);
   `;
   banner.innerHTML = `
     <span style="flex:1;line-height:1.4">📲 Install NoHungryPets: tap <strong>Share</strong> then <strong>Add to Home Screen</strong></span>
