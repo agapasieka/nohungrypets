@@ -81,6 +81,45 @@ function getMilestoneInfo(count) {
   };
 }
 
+// ── PWA: SERVICE WORKER + IOS INSTALL HINT ────────────────
+// Registers the shell-caching service worker (see sw.js) and, on iOS only
+// (Android/Chrome shows its own native install prompt automatically),
+// shows a small dismissible banner pointing at Share -> Add to Home Screen,
+// since Safari has no install-prompt UI of its own.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(err => {
+      console.warn('Service worker registration failed:', err);
+    });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone === true
+    || window.matchMedia('(display-mode: standalone)').matches;
+  const dismissed = localStorage.getItem('nhp-ios-install-dismissed');
+  if (!isIOS || isStandalone || dismissed) return;
+
+  const banner = document.createElement('div');
+  banner.style.cssText = `
+    position:fixed; left:1rem; right:1rem; bottom:1rem; z-index:9999;
+    background:#3D2B1F; color:white; border-radius:16px;
+    padding:0.9rem 1.1rem; display:flex; align-items:center; gap:0.75rem;
+    box-shadow:0 8px 32px rgba(0,0,0,0.25); font-size:0.85rem;
+    animation: fadeUp 0.3s ease both;
+  `;
+  banner.innerHTML = `
+    <span style="flex:1;line-height:1.4">📲 Install NoHungryPets: tap <strong>Share</strong> then <strong>Add to Home Screen</strong></span>
+    <button type="button" aria-label="Dismiss" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:1.1rem;cursor:pointer;padding:0.25rem;line-height:1">✕</button>
+  `;
+  banner.querySelector('button').addEventListener('click', () => {
+    localStorage.setItem('nhp-ios-install-dismissed', '1');
+    banner.remove();
+  });
+  document.body.appendChild(banner);
+});
+
 // Simple toast notification
 function showToast(msg, type = 'success') {
   const t = document.createElement('div');
