@@ -1,14 +1,19 @@
 // Copyright (c) 2026 NoHungryPets
 // Service worker for PWA installability. Deliberately narrow scope: only
-// caches the site's own static shell (HTML/CSS/JS/icons) for fast repeat
-// loads. Everything cross-origin - Firebase Auth, Firestore, Google Fonts,
-// Leaflet CDN, reCAPTCHA, postcodes.io - is left completely untouched and
-// always goes straight to the network, so listings/auth state are never
-// served stale from cache.
+// caches the site's own static shell (HTML/CSS/JS/icons). Everything
+// cross-origin - Firebase Auth, Firestore, Google Fonts, Leaflet CDN,
+// reCAPTCHA, postcodes.io - is left completely untouched and always goes
+// straight to the network, so listings/auth state are never served stale
+// from cache.
+//
+// Network-first, not stale-while-revalidate: this site ships multiple
+// deploys per session during active development, and "always at least one
+// load behind" was actively confusing testing. Always try the network
+// first; only fall back to cache when actually offline.
 //
 // Bump CACHE_VERSION on any change to this file or to SHELL_URLS so old
 // caches get cleared on the next visit.
-const CACHE_VERSION = 'nhp-shell-v1';
+const CACHE_VERSION = 'nhp-shell-v2';
 
 const SHELL_URLS = [
   '/', '/index.html', '/about.html', '/admin.html', '/contact.html',
@@ -43,15 +48,14 @@ self.addEventListener('fetch', (event) => {
   }
 
   event.respondWith(
-    caches.open(CACHE_VERSION).then(async (cache) => {
-      const cached = await cache.match(event.request);
-      const networkFetch = fetch(event.request)
-        .then((response) => {
-          if (response.ok) cache.put(event.request, response.clone());
-          return response;
-        })
-        .catch(() => cached);
-      return cached || networkFetch; // stale-while-revalidate
-    })
+    fetch(event.request)
+      .then((response) => {
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_VERSION).then((cache) => cache.put(event.request, clone));
+        }
+        return response;
+      })
+      .catch(() => caches.match(event.request)) // offline fallback only
   );
 });
