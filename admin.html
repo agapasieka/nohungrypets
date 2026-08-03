@@ -138,7 +138,11 @@
   const ADMIN_UID = 'YVK880UJPFOaqwB2uk1lddqF2fK2';
 
   auth.onAuthStateChanged(async (user) => {
-    if (!user || user.uid !== ADMIN_UID) {
+    if (!user) {
+      window.location.href = '/login';
+      return;
+    }
+    if (user.uid !== ADMIN_UID) {
       window.location.href = '/';
       return;
     }
