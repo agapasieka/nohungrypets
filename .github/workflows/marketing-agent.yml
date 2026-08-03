@@ -1,0 +1,77 @@
+name: Marketing draft agent
+
+# Generates a Facebook post draft (and an occasional illustration) via Gemini
+# and emails it to the site owner for manual review. Nothing is auto-posted.
+#
+# Runs entirely on GitHub-hosted runners — NO GCP compute (no Cloud Function,
+# Scheduler, Pub/Sub or Secret Manager), so the nohungrypets GCP project stays
+# on the free Firebase Spark plan with no billing account attached. Public-repo
+# Actions minutes are free and unlimited; repo secrets need no billing account.
+
+on:
+  # GitHub Actions cron is UTC ONLY (no time-zone support). "0 8 * * 1,3,5" =
+  # 08:00 UTC on Mon/Wed/Fri. During British Summer Time (BST, ~late Mar–late
+  # Oct) that is 09:00 Europe/London — the intended slot. During GMT (winter)
+  # UK local time == UTC, so it lands at 08:00 local instead of 09:00. This ~1h
+  # winter drift is an accepted trade-off (Actions can't do timezones), not a
+  # bug — an hour either way is immaterial for a draft that a human reviews
+  # before posting. Note: GitHub may also delay scheduled runs by a few minutes
+  # under load.
+  schedule:
+    - cron: "0 8 * * 1,3,5"
+  # Lets the owner fire a test run on demand from the Actions tab
+  # (Run workflow → optionally the how-to launch post arrives immediately).
+  workflow_dispatch:
+
+# No write permissions needed — the job only reads Firestore and sends email.
+permissions:
+  contents: read
+
+concurrency:
+  group: marketing-agent
+  cancel-in-progress: false
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: marketing-agent/script
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: marketing-agent/script/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate and email the draft
+        env:
+          # --- Secrets (GitHub → Settings → Secrets and variables → Actions) ---
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          # Dedicated read-only Firestore service-account JSON key (raw JSON or
+          # base64). Only used by milestone posts to read stats/global.
+          FIREBASE_SA_KEY: ${{ secrets.FIREBASE_SA_KEY }}
+          # --- Non-secret config (repo variables, with in-code defaults) ---
+          GMAIL_SENDER: ${{ vars.GMAIL_SENDER || 'agipasieka79@gmail.com' }}
+          RECIPIENT_EMAIL: ${{ vars.RECIPIENT_EMAIL || 'agipasieka79@gmail.com' }}
+          # First scheduled slot: drives the one-off how-to post + the stateless
+          # pillar rotation. Set as a repo variable to change without editing YAML.
+          SCHEDULE_START_DATE: ${{ vars.SCHEDULE_START_DATE || '2026-08-04' }}
+          # Launch-countdown pillar is active while now < this date; empty disables it.
+          LAUNCH_COUNTDOWN_UNTIL: ${{ vars.LAUNCH_COUNTDOWN_UNTIL }}
+          SITE_URL: ${{ vars.SITE_URL || 'https://nohungrypets.co.uk' }}
+          FACEBOOK_URL: ${{ vars.FACEBOOK_URL || 'https://www.facebook.com/nohungrypets' }}
+          GEMINI_TEXT_MODEL: ${{ vars.GEMINI_TEXT_MODEL || 'gemini-2.5-flash' }}
+          GEMINI_IMAGE_MODEL: ${{ vars.GEMINI_IMAGE_MODEL || 'gemini-2.5-flash-image' }}
+          STATS_DOC_PATH: ${{ vars.STATS_DOC_PATH || 'stats/global' }}
+          FIRESTORE_DATABASE_ID: ${{ vars.FIRESTORE_DATABASE_ID || '(default)' }}
+        run: node run.js

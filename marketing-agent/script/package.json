@@ -1,0 +1,20 @@
+{
+  "name": "nohungrypets-marketing-agent",
+  "version": "1.0.0",
+  "description": "Free marketing draft agent for NoHungryPets — generates Facebook post drafts (and occasional illustrations) via Gemini and emails them for manual review. Runs as a scheduled GitHub Actions workflow (no GCP billing account required).",
+  "main": "run.js",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node run.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@google/genai": "^2.15.0",
+    "firebase-admin": "^13.0.0",
+    "nodemailer": "^6.9.0"
+  },
+  "license": "ISC"
+}

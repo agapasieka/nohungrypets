@@ -1,16 +1,21 @@
 'use strict';
 
 /**
- * NoHungryPets — Free Marketing Draft Agent (Cloud Function, 2nd gen).
+ * NoHungryPets — Free Marketing Draft Agent (plain Node script).
  *
- * Triggered by Pub/Sub (fired by Cloud Scheduler on Mon/Wed/Fri 09:00). Each
- * run: pick the day's content pillar, write the Facebook post copy with Gemini,
- * generate an illustration for ~1-in-3 (community) posts, read live community
- * stats for milestone posts, then email the finished draft to the site owner.
- * Nothing is auto-posted — a human reviews and posts manually.
+ * Run on a schedule by a GitHub Actions workflow (Mon/Wed/Fri, see
+ * ../../.github/workflows/marketing-agent.yml) — or manually via
+ * `node marketing-agent/script/run.js`. Each run: pick the day's content
+ * pillar, write the Facebook post copy with Gemini, generate an illustration
+ * for ~1-in-3 (community) posts, read live community stats for milestone posts,
+ * then email the finished draft to the site owner. Nothing is auto-posted — a
+ * human reviews and posts manually.
+ *
+ * This deliberately uses NO GCP compute (no Cloud Function / Scheduler /
+ * Pub/Sub / Secret Manager) so the project stays on the free Firebase Spark
+ * plan with no billing account attached. Secrets come from GitHub Actions repo
+ * secrets, injected as env vars.
  */
-
-const functions = require('@google-cloud/functions-framework');
 
 const { loadConfig } = require('./lib/config');
 const { resolvePost, isCountdownActive, PILLARS } = require('./lib/pillars');
@@ -74,14 +79,19 @@ async function run(now = new Date()) {
   return { pillar: plan.pillar, hasImage: Boolean(image) };
 }
 
-// Pub/Sub-triggered CloudEvent entry point (2nd gen).
-functions.cloudEvent('marketingAgent', async () => {
+async function main() {
   try {
     await run();
   } catch (err) {
     console.error('Marketing agent run failed:', err);
-    throw err; // surface to Cloud Functions for retry/visibility
+    process.exitCode = 1; // non-zero → the GitHub Actions step (and run) fails
   }
-});
+}
 
-module.exports = { run };
+// Run immediately when invoked directly (`node run.js`), but not when required
+// by the unit tests.
+if (require.main === module) {
+  main();
+}
+
+module.exports = { run, main };

@@ -1,0 +1,15 @@
+node_modules/
+npm-debug.log
+*.log
+.DS_Store
+
+# Local secrets / service-account keys — never commit. .env.example is tracked.
+.env
+*.env
+!.env.example
+serviceAccount*.json
+*-sa-key.json
+
+# The repo-root .gitignore has `test/` (for the site's tests); re-include ours.
+!test/
+!test/**

@@ -3,9 +3,10 @@
 /**
  * Centralised environment/config parsing for the marketing draft agent.
  *
- * Secrets (GEMINI_API_KEY, GMAIL_APP_PASSWORD) are injected as environment
- * variables at deploy time from Secret Manager (see ../terraform). They are
- * never hardcoded or committed anywhere.
+ * Secrets (GEMINI_API_KEY, GMAIL_APP_PASSWORD, FIREBASE_SA_KEY) are injected as
+ * environment variables at runtime from GitHub Actions repo secrets (see
+ * ../../.github/workflows/marketing-agent.yml). They are never hardcoded or
+ * committed anywhere.
  */
 
 function required(name) {
@@ -27,7 +28,7 @@ function optional(name, fallback) {
  */
 function loadConfig(now = new Date()) {
   return {
-    // --- Secrets (from Secret Manager via env) ---
+    // --- Secrets (from GitHub Actions repo secrets via env) ---
     geminiApiKey: required('GEMINI_API_KEY'),
     gmailAppPassword: required('GMAIL_APP_PASSWORD'),
 
