@@ -81,6 +81,47 @@ function getMilestoneInfo(count) {
   };
 }
 
+// ── COOKIE CONSENT ─────────────────────────────────────────
+// Strictly-necessary cookies/local storage (session, preferences) always
+// run - no consent needed. Google Analytics is not strictly necessary, so
+// it stays off (see enableAnalytics() in js/auth.js, which checks the same
+// localStorage flag on load) until the user actively accepts here.
+document.addEventListener('DOMContentLoaded', () => {
+  if (localStorage.getItem('nhp-cookie-consent')) return; // already decided
+
+  // Fixed, always-stacked layout (text row, then button row) rather than a
+  // flex-wrap that can reflow unpredictably on narrow screens - a previous
+  // version of this pushed the buttons below the visible viewport on a
+  // narrow phone. max-height + overflow-y stays as a hard safety net.
+  const banner = document.createElement('div');
+  banner.id = 'cookie-consent-banner';
+  banner.style.cssText = `
+    position:fixed; left:0; right:0; bottom:0; z-index:10000;
+    background:#3D2B1F; color:white;
+    padding:0.75rem 1rem; box-shadow:0 -4px 24px rgba(0,0,0,0.2); font-size:0.78rem;
+    max-height:50vh; overflow-y:auto;
+    -webkit-transform:translateZ(0); transform:translateZ(0);
+  `;
+  banner.innerHTML = `
+    <div style="line-height:1.35;margin-bottom:0.6rem">🍪 Necessary cookies always run; Analytics only with your consent. <a href="/privacy" style="color:#E8733A;text-decoration:underline">Read more</a></div>
+    <div style="display:flex;gap:0.5rem;justify-content:flex-end">
+      <button type="button" id="cookie-decline" style="background:none;border:1px solid rgba(255,255,255,0.3);color:white;padding:0.5rem 0.9rem;border-radius:50px;font-weight:600;font-size:0.78rem;cursor:pointer;font-family:inherit;white-space:nowrap">Necessary only</button>
+      <button type="button" id="cookie-accept" style="background:#E8733A;border:none;color:white;padding:0.5rem 0.9rem;border-radius:50px;font-weight:700;font-size:0.78rem;cursor:pointer;font-family:inherit;white-space:nowrap">Accept all</button>
+    </div>
+  `;
+  document.body.appendChild(banner);
+
+  banner.querySelector('#cookie-accept').addEventListener('click', () => {
+    localStorage.setItem('nhp-cookie-consent', 'accepted');
+    if (typeof enableAnalytics === 'function') enableAnalytics();
+    banner.remove();
+  });
+  banner.querySelector('#cookie-decline').addEventListener('click', () => {
+    localStorage.setItem('nhp-cookie-consent', 'declined');
+    banner.remove();
+  });
+});
+
 // ── PWA: SERVICE WORKER + IOS INSTALL HINT ────────────────
 // Registers the shell-caching service worker (see sw.js) and, on iOS only
 // (Android/Chrome shows its own native install prompt automatically),
@@ -98,7 +139,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const isStandalone = window.navigator.standalone === true
     || window.matchMedia('(display-mode: standalone)').matches;
-  if (!isIOS || isStandalone) return;
+  // Don't compete with the cookie-consent banner for the same bottom-of-
+  // screen real estate - wait until that's been resolved first.
+  if (!isIOS || isStandalone || !localStorage.getItem('nhp-cookie-consent')) return;
 
   // -webkit-transform forces its own compositing layer - the standard fix
   // for iOS Safari's well-documented bug where position:fixed elements

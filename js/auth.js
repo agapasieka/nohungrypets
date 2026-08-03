@@ -55,17 +55,24 @@ const auth = firebase.auth();
 const db   = firebase.firestore();
 
 // ── ANALYTICS (GA4) ──────────────────────────────────────
-// Traffic/behaviour tracking via Firebase Analytics. Guarded so the
-// placeholder (or any invalid/missing) measurementId never throws or
-// breaks page load — real data only flows once a real ID is swapped in.
-try {
-  if (typeof firebase.analytics === 'function'
-      && firebaseConfig.measurementId
-      && firebaseConfig.measurementId !== 'G-XXXXXXXXXX') {
-    firebase.analytics();
+// Traffic/behaviour tracking via Firebase Analytics. Not strictly
+// necessary, so it's gated on cookie consent (see the banner in
+// js/main.js) - only runs if the user has previously accepted, or the
+// instant they click Accept. Guarded so the placeholder (or any
+// invalid/missing) measurementId never throws or breaks page load.
+function enableAnalytics() {
+  try {
+    if (typeof firebase.analytics === 'function'
+        && firebaseConfig.measurementId
+        && firebaseConfig.measurementId !== 'G-XXXXXXXXXX') {
+      firebase.analytics();
+    }
+  } catch (err) {
+    console.warn('Firebase Analytics init skipped:', err);
   }
-} catch (err) {
-  console.warn('Firebase Analytics init skipped:', err);
+}
+if (localStorage.getItem('nhp-cookie-consent') === 'accepted') {
+  enableAnalytics();
 }
 
 // ── GLOBAL PLATFORM STATS ────────────────────────────────
