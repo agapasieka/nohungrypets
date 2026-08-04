@@ -1372,17 +1372,6 @@
     searchInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') searchLocation(searchInput.value);
     });
-    // Pre-fill from the signed-in user's saved postcode, if any.
-    onAuthChange(async (user) => {
-      if (!user) return;
-      try {
-        const profile = await getUserProfile(user.uid);
-        if (profile && profile.postcode && !searchInput.value.trim()) {
-          searchInput.value = profile.postcode;
-          searchLocation(profile.postcode);
-        }
-      } catch (e) {}
-    });
   }
 
   // Wait for Firebase db to be ready
