@@ -157,6 +157,11 @@ footer { padding: 3rem 2.5rem; border-top: 1px solid rgba(61,43,31,0.08); }
 .footer-links { display: flex; gap: 1rem; flex-wrap: wrap; }
 .footer-links a { color: var(--brown-mid); text-decoration: none; font-weight: 600; font-size: 0.9rem; }
 .footer-links a:hover { color: var(--orange); }
+.footer-sponsors { padding-top: 1rem; border-top: 1px solid rgba(61,43,31,0.08); }
+.footer-sponsors-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 0.4rem; }
+.footer-sponsors-empty { font-size: 0.85rem; color: var(--brown-mid); font-weight: 500; }
+.footer-sponsors-empty a { color: var(--orange); font-weight: 700; text-decoration: none; }
+.footer-sponsors-empty a:hover { text-decoration: underline; }
 .footer-copy { color: var(--muted); font-size: 0.85rem; font-weight: 600; }
 
 /* ── TOAST ── */
