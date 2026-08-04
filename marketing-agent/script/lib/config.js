@@ -3,7 +3,7 @@
 /**
  * Centralised environment/config parsing for the marketing draft agent.
  *
- * Secrets (GEMINI_API_KEY, GMAIL_APP_PASSWORD, FIREBASE_SA_KEY) are injected as
+ * Secrets (GEMINI_API_KEY, RESEND_API_KEY, FIREBASE_SA_KEY) are injected as
  * environment variables at runtime from GitHub Actions repo secrets (see
  * ../../.github/workflows/marketing-agent.yml). They are never hardcoded or
  * committed anywhere.
@@ -30,10 +30,14 @@ function loadConfig(now = new Date()) {
   return {
     // --- Secrets (from GitHub Actions repo secrets via env) ---
     geminiApiKey: required('GEMINI_API_KEY'),
-    gmailAppPassword: required('GMAIL_APP_PASSWORD'),
+    resendApiKey: required('RESEND_API_KEY'),
 
     // --- Email ---
-    gmailSender: optional('GMAIL_SENDER', 'agipasieka79@gmail.com'),
+    // Resend's shared sandbox address works with zero setup, but on the free
+    // tier (no verified sending domain) it can only deliver to the email
+    // address you signed up to Resend with. Verify nohungrypets.co.uk in
+    // Resend later to lift that restriction — see README.
+    fromEmail: optional('FROM_EMAIL', 'onboarding@resend.dev'),
     recipientEmail: optional('RECIPIENT_EMAIL', 'agipasieka79@gmail.com'),
 
     // --- Models (overridable for future-proofing) ---

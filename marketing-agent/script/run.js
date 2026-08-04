@@ -64,8 +64,8 @@ async function run(now = new Date()) {
   }
 
   await sendDraft({
-    gmailSender: cfg.gmailSender,
-    gmailAppPassword: cfg.gmailAppPassword,
+    fromEmail: cfg.fromEmail,
+    resendApiKey: cfg.resendApiKey,
     recipientEmail: cfg.recipientEmail,
     pillar: plan.pillar,
     isFirstPost: plan.isFirstPost,

@@ -1,18 +1,39 @@
 'use strict';
 
 /**
- * Email delivery of the finished draft via Nodemailer + a Gmail App Password.
- * The post copy is shown inline; any generated illustration is embedded inline
- * (via CID) AND attached so the owner can download and upload it to Facebook.
+ * Email delivery of the finished draft via the Resend HTTP API (free tier:
+ * 100/day, 3,000/month — nowhere near this agent's ~12-16/month volume). No
+ * Gmail App Password, no SMTP, no extra npm dependency — just Node 20's
+ * built-in `fetch`. The post copy is shown inline; any generated illustration
+ * is embedded inline (as a base64 data URI — Resend's API doesn't support
+ * SMTP-style CID references) AND attached so the owner can download it and
+ * upload it to Facebook.
+ *
+ * On Resend's free tier, sending from the sandbox address (onboarding@resend.dev,
+ * the default) only delivers to the email address you signed up to Resend
+ * with — see README for details and the optional domain-verification upgrade.
  */
 
-const nodemailer = require('nodemailer');
+const RESEND_API_URL = 'https://api.resend.com/emails';
 
-function createTransport(gmailSender, gmailAppPassword) {
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: gmailSender, pass: gmailAppPassword },
-  });
+function createClient(resendApiKey) {
+  return {
+    async send(payload) {
+      const res = await fetch(RESEND_API_URL, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        throw new Error(`Resend API error ${res.status}: ${body}`);
+      }
+      return res.json();
+    },
+  };
 }
 
 function escapeHtml(str) {
@@ -24,8 +45,8 @@ function escapeHtml(str) {
 
 /**
  * @param {object} opts
- * @param {string} opts.gmailSender
- * @param {string} opts.gmailAppPassword
+ * @param {string} opts.fromEmail
+ * @param {string} opts.resendApiKey
  * @param {string} opts.recipientEmail
  * @param {string} opts.pillar
  * @param {boolean} opts.isFirstPost
@@ -33,12 +54,12 @@ function escapeHtml(str) {
  * @param {{data:Buffer,mimeType:string}|null} opts.image
  * @param {boolean} opts.listingPhotoReminder  Ask owner to attach a real photo.
  * @param {Date}   opts.now
- * @param {object} [transport]  injectable for testing
+ * @param {object} [client]  injectable for testing (must expose `.send(payload)`)
  */
-async function sendDraft(opts, transport) {
+async function sendDraft(opts, client) {
   const {
-    gmailSender,
-    gmailAppPassword,
+    fromEmail,
+    resendApiKey,
     recipientEmail,
     pillar,
     isFirstPost,
@@ -48,7 +69,7 @@ async function sendDraft(opts, transport) {
     now = new Date(),
   } = opts;
 
-  const tx = transport || createTransport(gmailSender, gmailAppPassword);
+  const resend = client || createClient(resendApiKey);
 
   const dateLabel = now.toISOString().slice(0, 10);
   const pillarLabel = isFirstPost ? 'how-to (launch)' : pillar;
@@ -60,18 +81,16 @@ async function sendDraft(opts, transport) {
   let imageHtml = '';
 
   if (image) {
-    const cid = 'draftimage@nohungrypets';
+    const base64Content = image.data.toString('base64');
     attachments.push({
       filename: imageFilename,
-      content: image.data,
-      contentType: image.mimeType,
-      cid,
+      content: base64Content,
     });
     imageHtml =
       `<p style="margin:16px 0 6px;font-weight:600">Generated illustration ` +
       `(also attached — download &amp; upload to Facebook):</p>` +
-      `<img src="cid:${cid}" alt="Generated illustration" ` +
-      `style="max-width:100%;border-radius:8px" />`;
+      `<img src="data:${image.mimeType};base64,${base64Content}" ` +
+      `alt="Generated illustration" style="max-width:100%;border-radius:8px" />`;
   }
 
   const reminderHtml = listingPhotoReminder
@@ -113,9 +132,9 @@ async function sendDraft(opts, transport) {
     textParts.push('', 'An illustration is attached to this email.');
   }
 
-  return tx.sendMail({
-    from: `NoHungryPets Marketing Agent <${gmailSender}>`,
-    to: recipientEmail,
+  return resend.send({
+    from: `NoHungryPets Marketing Agent <${fromEmail}>`,
+    to: [recipientEmail],
     subject,
     text: textParts.join('\n'),
     html,
@@ -123,4 +142,4 @@ async function sendDraft(opts, transport) {
   });
 }
 
-module.exports = { createTransport, sendDraft, escapeHtml };
+module.exports = { createClient, sendDraft, escapeHtml };
