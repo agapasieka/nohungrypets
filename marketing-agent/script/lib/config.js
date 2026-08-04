@@ -35,10 +35,11 @@ function loadConfig(now = new Date()) {
     // --- Email ---
     // Resend's shared sandbox address works with zero setup, but on the free
     // tier (no verified sending domain) it can only deliver to the email
-    // address you signed up to Resend with. Verify nohungrypets.co.uk in
-    // Resend later to lift that restriction — see README.
+    // address you signed up to Resend with (info.nohungrypets@gmail.com).
+    // Verify nohungrypets.co.uk in Resend later to lift that restriction —
+    // see README.
     fromEmail: optional('FROM_EMAIL', 'onboarding@resend.dev'),
-    recipientEmail: optional('RECIPIENT_EMAIL', 'agipasieka79@gmail.com'),
+    recipientEmail: optional('RECIPIENT_EMAIL', 'info.nohungrypets@gmail.com'),
 
     // --- Models (overridable for future-proofing) ---
     textModel: optional('GEMINI_TEXT_MODEL', 'gemini-2.5-flash'),

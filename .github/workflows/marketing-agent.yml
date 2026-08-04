@@ -65,7 +65,7 @@ jobs:
           # can only deliver to the email you signed up to Resend with — see
           # marketing-agent/script/README.md.
           FROM_EMAIL: ${{ vars.FROM_EMAIL || 'onboarding@resend.dev' }}
-          RECIPIENT_EMAIL: ${{ vars.RECIPIENT_EMAIL || 'agipasieka79@gmail.com' }}
+          RECIPIENT_EMAIL: ${{ vars.RECIPIENT_EMAIL || 'info.nohungrypets@gmail.com' }}
           # First scheduled slot: drives the one-off how-to post + the stateless
           # pillar rotation. Set as a repo variable to change without editing YAML.
           SCHEDULE_START_DATE: ${{ vars.SCHEDULE_START_DATE || '2026-08-04' }}

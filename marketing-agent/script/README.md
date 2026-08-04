@@ -21,9 +21,9 @@ manual review**. Nothing is auto-posted.
 - **Stats**: milestone posts read the live `stats/global` Firestore doc
   (read-only, via the Admin SDK + a dedicated read-only service account).
 - **Delivery**: [Resend](https://resend.com)'s HTTP API (free tier: 100/day,
-  3,000/month) emails the draft to `agipasieka79@gmail.com` (copy inline; image
-  inline as a data URI + attached). No SMTP, no Gmail App Password, no extra
-  npm dependency — just Node 20's built-in `fetch`.
+  3,000/month) emails the draft to `info.nohungrypets@gmail.com` (copy inline;
+  image inline as a data URI + attached). No SMTP, no Gmail App Password, no
+  extra npm dependency — just Node 20's built-in `fetch`.
 
 > **Why Resend instead of a Gmail App Password?** App Passwords require
 > 2-Step Verification, and even with 2SV on, Google silently restricts App
@@ -85,7 +85,7 @@ Settings page → *Variables* tab — e.g. `SCHEDULE_START_DATE`,
 
 ### 2. Sign up for Resend and grab an API key
 
-1. Go to <https://resend.com> and sign up **using `agipasieka79@gmail.com`**
+1. Go to <https://resend.com> and sign up **using `info.nohungrypets@gmail.com`**
    (free, no credit card).
 2. Dashboard → **API Keys** → **Create API Key** → paste the value into the
    `RESEND_API_KEY` repo secret above.
@@ -93,7 +93,7 @@ Settings page → *Variables* tab — e.g. `SCHEDULE_START_DATE`,
 **Sandbox limitation (default, zero setup):** sending `from` the shared
 `onboarding@resend.dev` address only delivers **to the email address you
 signed up to Resend with** — which is fine here since drafts only ever go to
-`agipasieka79@gmail.com`, the same address. If you ever want to send from a
+`info.nohungrypets@gmail.com`, the same address. If you ever want to send from a
 `@nohungrypets.co.uk` address or to a different recipient, verify the
 `nohungrypets.co.uk` domain in Resend (Dashboard → Domains → Add Domain, then
 add the DNS records it gives you — same place `CNAME` already lives for GitHub
@@ -137,7 +137,7 @@ here already ignores `*-sa-key.json` and `serviceAccount*.json` as a safety net.
 
 Repo → **Actions** tab → **"Marketing draft agent"** workflow → **Run workflow**
 (the `workflow_dispatch` button). On/near the launch date this sends the one-off
-**how-to** draft to `agipasieka79@gmail.com`. Confirm the email arrives, reads
+**how-to** draft to `info.nohungrypets@gmail.com`. Confirm the email arrives, reads
 well, and — on community posts — the illustration renders. After that it runs
 automatically on the Mon/Wed/Fri schedule.
 
@@ -151,7 +151,7 @@ Injected by the workflow at run time.
 | `RESEND_API_KEY` | **repo secret** | — | Resend API key (free tier). |
 | `FIREBASE_SA_KEY` | **repo secret** | — | Read-only Firestore SA JSON key (raw or base64). Needed only for milestone posts. |
 | `FROM_EMAIL` | var | `onboarding@resend.dev` | Resend sender address (sandbox default — see step 2). |
-| `RECIPIENT_EMAIL` | var | `agipasieka79@gmail.com` | Where drafts are delivered. |
+| `RECIPIENT_EMAIL` | var | `info.nohungrypets@gmail.com` | Where drafts are delivered. |
 | `SCHEDULE_START_DATE` | var | `2026-08-04` | First scheduled slot (drives the how-to + rotation). |
 | `LAUNCH_COUNTDOWN_UNTIL` | var | *(empty)* | ISO date; countdown pillar active while now < this. |
 | `SITE_URL` | var | `https://nohungrypets.co.uk` | Link embedded in posts. |
