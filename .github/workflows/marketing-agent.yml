@@ -73,8 +73,8 @@ jobs:
           LAUNCH_COUNTDOWN_UNTIL: ${{ vars.LAUNCH_COUNTDOWN_UNTIL }}
           SITE_URL: ${{ vars.SITE_URL || 'https://nohungrypets.co.uk' }}
           FACEBOOK_URL: ${{ vars.FACEBOOK_URL || 'https://www.facebook.com/nohungrypets' }}
-          GEMINI_TEXT_MODEL: ${{ vars.GEMINI_TEXT_MODEL || 'gemini-2.5-flash' }}
-          GEMINI_IMAGE_MODEL: ${{ vars.GEMINI_IMAGE_MODEL || 'gemini-2.5-flash-image' }}
+          GEMINI_TEXT_MODEL: ${{ vars.GEMINI_TEXT_MODEL || 'gemini-3.6-flash' }}
+          GEMINI_IMAGE_MODEL: ${{ vars.GEMINI_IMAGE_MODEL || 'gemini-3.1-flash-image' }}
           STATS_DOC_PATH: ${{ vars.STATS_DOC_PATH || 'stats/global' }}
           FIRESTORE_DATABASE_ID: ${{ vars.FIRESTORE_DATABASE_ID || '(default)' }}
         run: node run.js

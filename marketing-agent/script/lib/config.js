@@ -42,8 +42,13 @@ function loadConfig(now = new Date()) {
     recipientEmail: optional('RECIPIENT_EMAIL', 'info.nohungrypets@gmail.com'),
 
     // --- Models (overridable for future-proofing) ---
-    textModel: optional('GEMINI_TEXT_MODEL', 'gemini-2.5-flash'),
-    imageModel: optional('GEMINI_IMAGE_MODEL', 'gemini-2.5-flash-image'),
+    // gemini-2.5-flash/-image were retired for new API keys ahead of their
+    // official shutdown date (Oct 2026) — a fresh key hit a 404 immediately.
+    // Current stable IDs as of 2026-08-04; check https://ai.google.dev/gemini-api/docs/models
+    // if this starts 404ing again, and override via the repo variables below
+    // rather than waiting on a code change.
+    textModel: optional('GEMINI_TEXT_MODEL', 'gemini-3.6-flash'),
+    imageModel: optional('GEMINI_IMAGE_MODEL', 'gemini-3.1-flash-image'),
 
     // --- Scheduling / rotation ---
     // First scheduled Mon/Wed/Fri slot. The very first slot on/after this

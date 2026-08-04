@@ -15,8 +15,8 @@ manual review**. Nothing is auto-posted.
 - **Trigger**: GitHub Actions `schedule` cron (`0 8 * * 1,3,5`) + a
   `workflow_dispatch` button for manual test runs.
   See [`../../.github/workflows/marketing-agent.yml`](../../.github/workflows/marketing-agent.yml).
-- **Text**: Gemini (`gemini-2.5-flash`) writes the post copy.
-- **Images**: Gemini 2.5 Flash Image ("nano banana") generates a warm, soft,
+- **Text**: Gemini (`gemini-3.6-flash`) writes the post copy.
+- **Images**: Gemini 3.1 Flash Image ("nano banana 2") generates a warm, soft,
   "sharing is caring" illustration — **only** on the ~1-in-3 community posts.
 - **Stats**: milestone posts read the live `stats/global` Firestore doc
   (read-only, via the Admin SDK + a dedicated read-only service account).
@@ -156,8 +156,8 @@ Injected by the workflow at run time.
 | `LAUNCH_COUNTDOWN_UNTIL` | var | *(empty)* | ISO date; countdown pillar active while now < this. |
 | `SITE_URL` | var | `https://nohungrypets.co.uk` | Link embedded in posts. |
 | `FACEBOOK_URL` | var | `https://www.facebook.com/nohungrypets` | Page URL. |
-| `GEMINI_TEXT_MODEL` | var | `gemini-2.5-flash` | Override text model. |
-| `GEMINI_IMAGE_MODEL` | var | `gemini-2.5-flash-image` | Override image model. |
+| `GEMINI_TEXT_MODEL` | var | `gemini-3.6-flash` | Override text model — check [available models](https://ai.google.dev/gemini-api/docs/models) if this starts 404ing. |
+| `GEMINI_IMAGE_MODEL` | var | `gemini-3.1-flash-image` | Override image model. |
 | `STATS_DOC_PATH` | var | `stats/global` | Firestore doc for milestone numbers. |
 | `FIRESTORE_DATABASE_ID` | var | `(default)` | Firestore database id. |
 
