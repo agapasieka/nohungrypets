@@ -15,5 +15,8 @@
     "@google/genai": "^2.15.0",
     "firebase-admin": "^13.0.0"
   },
+  "overrides": {
+    "uuid": "^11.1.1"
+  },
   "license": "ISC"
 }
