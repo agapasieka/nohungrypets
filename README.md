@@ -38,6 +38,16 @@ To keep the database clean, listings support an auto-archiving flow:
 - This applies a badge to the listing but leaves it visible for 24 hours.
 - When the owner visits their Profile page, the app quietly checks all of their claimed listings in the background. If any have been claimed for more than 24 hours, the app auto-archives them to save space. (Note: Due to Cloudinary security limits, the images are kept in Cloudinary, but the tiny compressed files will take years to reach the 25 GB limit).
 
+## Marketing Automation
+
+A free, zero-billing-account pipeline drafts Facebook posts (and the
+occasional illustration) for the NoHungryPets Page and emails them to
+`info.nohungrypets@gmail.com` for manual review — nothing is auto-posted. It
+runs as a scheduled GitHub Actions workflow (Mon/Wed/Fri) using Gemini for
+text/image generation and Resend for delivery. See
+[`marketing-agent/script/README.md`](marketing-agent/script/README.md) for
+how it works and how to configure it.
+
 ## Signup Flow Diagram
 
 Here is a diagram illustrating the signup process and how it integrates with Firebase:

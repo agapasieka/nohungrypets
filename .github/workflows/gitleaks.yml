@@ -1,0 +1,61 @@
+name: Gitleaks secret scan
+
+# Defense-in-depth against accidentally committed secrets, on top of GitHub's
+# native secret scanning + push protection (already enabled — see the
+# "GitHub & Firebase Security Hardening" plan entry). Push protection only
+# covers secret formats in GitHub's partner program; gitleaks' broader
+# regex/entropy rules catch provider keys that aren't (e.g. Google AI Studio,
+# Resend). This runs after a push lands rather than blocking it, so it's a
+# second layer, not a replacement.
+#
+# Uses the plain MIT-licensed `gitleaks` binary directly rather than the
+# `gitleaks-action` wrapper: that wrapper needs a paid license for
+# organization-owned repos (not an issue here, this repo is personal-owned)
+# and stops working once GitHub removes Node 20 from hosted runners on
+# 2026-09-16 unless it's updated in time. The raw binary has neither
+# constraint.
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+  security-events: write # to upload results to the Security tab
+
+concurrency:
+  group: gitleaks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install gitleaks
+        run: |
+          set -euo pipefail
+          VERSION=$(curl -sSL https://api.github.com/repos/gitleaks/gitleaks/releases/latest | jq -r .tag_name | sed 's/^v//')
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz" -o gitleaks.tar.gz
+          tar -xzf gitleaks.tar.gz gitleaks
+          chmod +x gitleaks
+
+      - name: Scan for secrets
+        run: |
+          ./gitleaks detect \
+            --source . \
+            --redact \
+            --verbose \
+            --report-format sarif \
+            --report-path gitleaks-report.sarif
+
+      - name: Upload results to code scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: gitleaks-report.sarif

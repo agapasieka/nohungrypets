@@ -1,0 +1,14 @@
+# Known, intentional non-secrets — documented in claude-docs/nohungrypets-plan.md.
+# Do not add real secret fingerprints here; rotate and remove the commit instead.
+
+# firestore.rules ADMIN_UID — a Firebase Auth UID (not a credential), already
+# public client-side in admin.html regardless of this rule file.
+0b65bf0e9d26e3559ae6d66dbc5b3c4fbc13d853:firestore.rules:generic-api-key:38
+d2bc8836e030dd918da342f688209a251cb25c43:firestore.rules:generic-api-key:48
+
+# Firebase Web apiKey in login.html / js/auth.js — meant to be public by
+# design (Firebase's own docs: this key identifies the project, it is not a
+# secret). Real protection is the HTTP-referrer restriction + App Check
+# enforcement set up in the "GitHub & Firebase Security Hardening" pass.
+2334450a1397097894cb64fb13ff711741984c76:login.html:gcp-api-key:423
+14df0f1449743e67454f45d2291791bdf7777b1e:js/auth.js:gcp-api-key:6
