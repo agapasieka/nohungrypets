@@ -48,6 +48,16 @@ text/image generation and Resend for delivery. See
 [`marketing-agent/script/README.md`](marketing-agent/script/README.md) for
 how it works and how to configure it.
 
+## Automated PR Reviews
+
+[CodeRabbit](https://coderabbit.ai) reviews every pull request automatically
+(free forever for public repos, no billing account) — config in
+[`.coderabbit.yaml`](.coderabbit.yaml). Complements the existing
+[CodeQL](https://github.com/agapasieka/nohungrypets/security/code-scanning)
+and [gitleaks](.github/workflows/gitleaks.yml) checks: CodeRabbit reviews
+logic/style/simplification, CodeQL scans for vulnerability patterns, gitleaks
+scans for accidentally committed secrets.
+
 ## Signup Flow Diagram
 
 Here is a diagram illustrating the signup process and how it integrates with Firebase:
