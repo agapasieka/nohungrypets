@@ -4,18 +4,19 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Admin Stats – NoHungryPets</title>
+  <title>Admin – NoHungryPets</title>
   <link rel="manifest" href="/manifest.json">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NoHungryPets">
-  <meta property="og:title" content="Admin Stats — NoHungryPets">
+  <meta property="og:title" content="Admin — NoHungryPets">
   <meta property="og:description" content="Admin dashboard for NoHungryPets.">
   <meta property="og:image" content="https://nohungrypets.co.uk/images/social-share.png">
   <meta property="og:url" content="https://nohungrypets.co.uk/admin">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Admin Stats — NoHungryPets">
+  <meta name="twitter:title" content="Admin — NoHungryPets">
   <meta name="twitter:description" content="Admin dashboard for NoHungryPets.">
   <meta name="twitter:image" content="https://nohungrypets.co.uk/images/social-share.png">
+  <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#E8733A">
   <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
@@ -55,8 +56,39 @@
     }
     .loading .stat-num { color: var(--muted); }
 
+    /* Section header with an action on the right (e.g. reveal-emails toggle) */
+    .card-head {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 1rem; flex-wrap: wrap;
+    }
+    .btn-toggle {
+      border: 1.5px solid var(--cream-dark, #e7ddcd); background: var(--cream);
+      color: var(--brown-mid); font-weight: 600; font-size: 0.8rem;
+      padding: 0.5rem 0.9rem; border-radius: 999px; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; white-space: nowrap;
+    }
+    .btn-toggle:hover { background: var(--cream-dark, #efe6d7); }
+
+    /* Recent signups table */
+    .table-scroll { overflow-x: auto; margin: 0 -0.5rem; }
+    table.signups { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+    table.signups th, table.signups td {
+      text-align: left; padding: 0.7rem 0.75rem; vertical-align: middle;
+    }
+    table.signups thead th {
+      font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--muted); font-weight: 700; border-bottom: 2px solid var(--cream);
+    }
+    table.signups tbody tr { border-bottom: 1px solid var(--cream); }
+    table.signups tbody tr:last-child { border-bottom: none; }
+    table.signups td.name { font-weight: 600; color: var(--brown); }
+    table.signups td.email { font-variant-numeric: tabular-nums; color: var(--brown-mid); }
+    table.signups td.muted { color: var(--muted); white-space: nowrap; }
+
+    .note { font-size: 0.8rem; color: var(--muted); margin: 0.85rem 0 0; }
     .cta-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.5rem; }
     .checking { text-align: center; padding: 4rem 1rem; color: var(--muted); font-weight: 600; }
+    .empty { padding: 1.5rem 0.75rem; color: var(--muted); font-weight: 500; }
     .hidden { display: none; }
     @media (max-width: 700px) {
       .wrap { padding: 0 1.5rem 4rem; }
@@ -81,19 +113,19 @@
   <div class="page-header-inner">
     <div class="page-tag">✦ Admin</div>
     <h1>Platform <em>stats</em></h1>
-    <p>Running totals of activity across NoHungryPets. Visible to the site owner only.</p>
+    <p>Live figures, read straight from the database. Visible to admins only.</p>
   </div>
 </div>
 
 <main class="wrap">
-  <!-- Shown while auth is resolving / before admin check passes -->
+  <!-- Shown while auth is resolving / before the admin check passes -->
   <div id="checking" class="checking">Checking access…</div>
 
-  <!-- Admin dashboard (revealed only for the admin UID) -->
+  <!-- Admin dashboard (revealed only for accounts listed in the `admins` collection) -->
   <div id="dashboard" class="hidden">
     <section class="card">
       <h2>Community totals</h2>
-      <p>Denormalised counters, incremented in real time as each event happens.</p>
+      <p>Counted live from the database each time this page loads — not a running tally, so these stay accurate even after deletions.</p>
       <div class="stat-grid loading" id="stat-grid">
         <div class="stat-tile">
           <div class="stat-num" id="stat-users">—</div>
@@ -101,13 +133,34 @@
         </div>
         <div class="stat-tile">
           <div class="stat-num" id="stat-listings">—</div>
-          <div class="stat-label">Listings posted</div>
+          <div class="stat-label">Active listings</div>
         </div>
         <div class="stat-tile">
           <div class="stat-num" id="stat-claims">—</div>
           <div class="stat-label">Items claimed</div>
         </div>
       </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2>Recent signups</h2>
+          <p>The 10 most recent members to join.</p>
+        </div>
+        <button id="toggle-emails" class="btn-toggle" type="button">Show emails</button>
+      </div>
+      <div class="table-scroll">
+        <table class="signups">
+          <thead>
+            <tr><th>Name</th><th>Email</th><th>Postcode</th><th>Joined</th></tr>
+          </thead>
+          <tbody id="signup-rows">
+            <tr><td colspan="4" class="empty">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">Member details are personal data — shown to admins only, over a secure connection. Emails are masked by default.</p>
     </section>
 
     <section class="card">
@@ -149,37 +202,136 @@
 <script src="js/auth.js"></script>
 <script src="js/main.js"></script>
 <script>
-  // Hardcoded site-owner UID (a Firebase Auth UID, not a secret). Non-admins
-  // are redirected away client-side; firestore.rules also blocks non-admin reads.
-  const ADMIN_UID = 'YVK880UJPFOaqwB2uk1lddqF2fK2';
+  // ── Admin gate ───────────────────────────────────────────
+  // Who may view this page is decided by the `admins` collection, NOT by a
+  // list hardcoded here: an account can see this dashboard only if a document
+  // exists at admins/{their-uid}. To add an admin, create that doc in the
+  // Firebase Console (Firestore → admins → Add document, ID = their User UID)
+  // — no code change or redeploy needed. firestore.rules enforces the same
+  // check server-side, so the data below is genuinely protected, not just hidden.
+  async function isAdmin(uid) {
+    try {
+      const doc = await db.collection('admins').doc(uid).get();
+      return doc.exists;
+    } catch (err) {
+      console.error('Admin check failed:', err);
+      return false;
+    }
+  }
 
+  // ── Helpers ──────────────────────────────────────────────
+  function maskEmail(email) {
+    if (!email) return '—';
+    const at = email.indexOf('@');
+    if (at < 1) return '•••';
+    return email[0] + '•••' + email.slice(at); // e.g. j•••@gmail.com
+  }
+
+  function formatJoined(ts) {
+    try {
+      const d = ts && typeof ts.toDate === 'function' ? ts.toDate() : null;
+      if (!d) return '—';
+      return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    } catch (_) { return '—'; }
+  }
+
+  let emailsRevealed = false;
+
+  // ── Load the three live counts ───────────────────────────
+  async function loadTotals() {
+    const grid = document.getElementById('stat-grid');
+    const set = (id, val) => { document.getElementById(id).textContent = val; };
+    try {
+      const [users, listings, claims] = await Promise.all([
+        db.collection('users').count().get(),
+        db.collection('listings').count().get(),
+        db.collection('listings').where('status', '==', 'claimed').count().get()
+      ]);
+      set('stat-users',    users.data().count);
+      set('stat-listings', listings.data().count);
+      set('stat-claims',   claims.data().count);
+    } catch (err) {
+      console.error('Error loading totals:', err);
+      ['stat-users', 'stat-listings', 'stat-claims'].forEach(id => set(id, '!'));
+    } finally {
+      grid.classList.remove('loading');
+    }
+  }
+
+  // ── Load the 10 most recent signups ──────────────────────
+  async function loadRecentSignups() {
+    const tbody = document.getElementById('signup-rows');
+    try {
+      const snap = await db.collection('users')
+        .orderBy('createdAt', 'desc')
+        .limit(10)
+        .get();
+
+      tbody.textContent = '';
+
+      if (snap.empty) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 4; td.className = 'empty';
+        td.textContent = 'No signups yet.';
+        tr.appendChild(td); tbody.appendChild(tr);
+        return;
+      }
+
+      snap.forEach(doc => {
+        const u = doc.data() || {};
+        const tr = document.createElement('tr');
+
+        const name = document.createElement('td');
+        name.className = 'name';
+        name.textContent = u.name || '—';
+
+        const email = document.createElement('td');
+        email.className = 'email';
+        email.dataset.full = u.email || '';
+        email.textContent = emailsRevealed ? (u.email || '—') : maskEmail(u.email);
+
+        const postcode = document.createElement('td');
+        postcode.textContent = u.postcode || '—';
+
+        const joined = document.createElement('td');
+        joined.className = 'muted';
+        joined.textContent = formatJoined(u.createdAt);
+
+        tr.append(name, email, postcode, joined);
+        tbody.appendChild(tr);
+      });
+    } catch (err) {
+      console.error('Error loading recent signups:', err);
+      tbody.textContent = '';
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 4; td.className = 'empty';
+      td.textContent = 'Could not load signups.';
+      tr.appendChild(td); tbody.appendChild(tr);
+    }
+  }
+
+  // ── Reveal / hide emails ─────────────────────────────────
+  document.getElementById('toggle-emails').addEventListener('click', () => {
+    emailsRevealed = !emailsRevealed;
+    document.getElementById('toggle-emails').textContent = emailsRevealed ? 'Hide emails' : 'Show emails';
+    document.querySelectorAll('td.email').forEach(td => {
+      const full = td.dataset.full;
+      td.textContent = emailsRevealed ? (full || '—') : maskEmail(full);
+    });
+  });
+
+  // ── Entry point ──────────────────────────────────────────
   auth.onAuthStateChanged(async (user) => {
-    if (!user) {
-      window.location.href = '/login';
-      return;
-    }
-    if (user.uid !== ADMIN_UID) {
-      window.location.href = '/';
-      return;
-    }
+    if (!user) { window.location.href = '/login'; return; }
+    if (!(await isAdmin(user.uid))) { window.location.href = '/'; return; }
 
-    // Passed the gate — reveal the dashboard and load the counters.
+    // Passed the gate — reveal the dashboard and load everything.
     document.getElementById('checking').classList.add('hidden');
     document.getElementById('dashboard').classList.remove('hidden');
-
-    try {
-      const doc = await db.collection('stats').doc('global').get();
-      const data = doc.exists ? doc.data() : {};
-      document.getElementById('stat-users').textContent    = data.totalUsers    || 0;
-      document.getElementById('stat-listings').textContent = data.totalListings || 0;
-      document.getElementById('stat-claims').textContent   = data.totalClaims   || 0;
-      document.getElementById('stat-grid').classList.remove('loading');
-    } catch (err) {
-      console.error('Error loading stats:', err);
-      document.getElementById('stat-users').textContent    = '!';
-      document.getElementById('stat-listings').textContent = '!';
-      document.getElementById('stat-claims').textContent   = '!';
-    }
+    loadTotals();
+    loadRecentSignups();
   });
 </script>
 </body>
