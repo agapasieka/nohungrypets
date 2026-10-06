@@ -220,11 +220,23 @@
   }
 
   // ── Helpers ──────────────────────────────────────────────
+  // Coerce a possibly-missing / non-string field for display. Users can write
+  // arbitrary values to their own record, so nothing here assumes a string.
+  function safeText(v) {
+    if (typeof v === 'string') return v || '—';
+    return (v === null || v === undefined || v === '') ? '—' : String(v);
+  }
+
   function maskEmail(email) {
-    if (!email) return '—';
+    if (typeof email !== 'string' || !email) return '—';
     const at = email.indexOf('@');
     if (at < 1) return '•••';
     return email[0] + '•••' + email.slice(at); // e.g. j•••@gmail.com
+  }
+
+  function createdMillis(ts) {
+    try { return ts && typeof ts.toMillis === 'function' ? ts.toMillis() : 0; }
+    catch (_) { return 0; }
   }
 
   function formatJoined(ts) {
@@ -237,78 +249,82 @@
 
   let emailsRevealed = false;
 
-  // ── Load the three live counts ───────────────────────────
-  async function loadTotals() {
-    const grid = document.getElementById('stat-grid');
-    const set = (id, val) => { document.getElementById(id).textContent = val; };
+  const setTile = (id, val) => { document.getElementById(id).textContent = val; };
+
+  function signupMessage(text) {
+    const tbody = document.getElementById('signup-rows');
+    tbody.textContent = '';
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 4; td.className = 'empty';
+    td.textContent = text;
+    tr.appendChild(td); tbody.appendChild(tr);
+  }
+
+  function renderSignups(rows) {
+    const tbody = document.getElementById('signup-rows');
+    if (!rows.length) { signupMessage('No signups yet.'); return; }
+    tbody.textContent = '';
+    rows.forEach(u => {
+      const tr = document.createElement('tr');
+
+      const name = document.createElement('td');
+      name.className = 'name';
+      name.textContent = safeText(u.name);
+
+      const email = document.createElement('td');
+      email.className = 'email';
+      email.dataset.full = typeof u.email === 'string' ? u.email : '';
+      email.textContent = emailsRevealed ? (email.dataset.full || '—') : maskEmail(u.email);
+
+      const postcode = document.createElement('td');
+      postcode.textContent = safeText(u.postcode);
+
+      const joined = document.createElement('td');
+      joined.className = 'muted';
+      joined.textContent = formatJoined(u.createdAt);
+
+      tr.append(name, email, postcode, joined);
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ── Signups: one read → total count + the 10 most recent ──
+  // Firestore's count() aggregation is modular-SDK only; this page uses the
+  // compat SDK, so we read the collection and count/sort client-side. That's
+  // fine at this scale; if the site grows to many thousands of records, move
+  // these counts to a server-side aggregate (e.g. a maintained counter doc).
+  async function loadSignups() {
     try {
-      const [users, listings, claims] = await Promise.all([
-        db.collection('users').count().get(),
-        db.collection('listings').count().get(),
-        db.collection('listings').where('status', '==', 'claimed').count().get()
-      ]);
-      set('stat-users',    users.data().count);
-      set('stat-listings', listings.data().count);
-      set('stat-claims',   claims.data().count);
+      const snap = await db.collection('users').get();
+      setTile('stat-users', snap.size);
+      const rows = [];
+      snap.forEach(doc => rows.push(doc.data() || {}));
+      rows.sort((a, b) => createdMillis(b.createdAt) - createdMillis(a.createdAt));
+      renderSignups(rows.slice(0, 10));
     } catch (err) {
-      console.error('Error loading totals:', err);
-      ['stat-users', 'stat-listings', 'stat-claims'].forEach(id => set(id, '!'));
-    } finally {
-      grid.classList.remove('loading');
+      console.error('Error loading signups:', err);
+      setTile('stat-users', '!');
+      signupMessage('Could not load signups.');
     }
   }
 
-  // ── Load the 10 most recent signups ──────────────────────
-  async function loadRecentSignups() {
-    const tbody = document.getElementById('signup-rows');
+  // ── Listings: one read → active (available) + claimed ─────
+  async function loadListings() {
     try {
-      const snap = await db.collection('users')
-        .orderBy('createdAt', 'desc')
-        .limit(10)
-        .get();
-
-      tbody.textContent = '';
-
-      if (snap.empty) {
-        const tr = document.createElement('tr');
-        const td = document.createElement('td');
-        td.colSpan = 4; td.className = 'empty';
-        td.textContent = 'No signups yet.';
-        tr.appendChild(td); tbody.appendChild(tr);
-        return;
-      }
-
+      const snap = await db.collection('listings').get();
+      let available = 0, claimed = 0;
       snap.forEach(doc => {
-        const u = doc.data() || {};
-        const tr = document.createElement('tr');
-
-        const name = document.createElement('td');
-        name.className = 'name';
-        name.textContent = u.name || '—';
-
-        const email = document.createElement('td');
-        email.className = 'email';
-        email.dataset.full = u.email || '';
-        email.textContent = emailsRevealed ? (u.email || '—') : maskEmail(u.email);
-
-        const postcode = document.createElement('td');
-        postcode.textContent = u.postcode || '—';
-
-        const joined = document.createElement('td');
-        joined.className = 'muted';
-        joined.textContent = formatJoined(u.createdAt);
-
-        tr.append(name, email, postcode, joined);
-        tbody.appendChild(tr);
+        const status = (doc.data() || {}).status;
+        if (status === 'available') available++;
+        else if (status === 'claimed') claimed++;
       });
+      setTile('stat-listings', available);
+      setTile('stat-claims', claimed);
     } catch (err) {
-      console.error('Error loading recent signups:', err);
-      tbody.textContent = '';
-      const tr = document.createElement('tr');
-      const td = document.createElement('td');
-      td.colSpan = 4; td.className = 'empty';
-      td.textContent = 'Could not load signups.';
-      tr.appendChild(td); tbody.appendChild(tr);
+      console.error('Error loading listing totals:', err);
+      setTile('stat-listings', '!');
+      setTile('stat-claims', '!');
     }
   }
 
@@ -330,8 +346,8 @@
     // Passed the gate — reveal the dashboard and load everything.
     document.getElementById('checking').classList.add('hidden');
     document.getElementById('dashboard').classList.remove('hidden');
-    loadTotals();
-    loadRecentSignups();
+    Promise.all([loadSignups(), loadListings()])
+      .finally(() => document.getElementById('stat-grid').classList.remove('loading'));
   });
 </script>
 </body>
