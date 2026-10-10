@@ -65,6 +65,12 @@
       transition: background 0.2s;
     }
     .location-search button:hover { background: var(--orange-deep); }
+    .location-search select {
+      flex: 0 0 auto; padding: 0.8rem 1rem; border-radius: 12px;
+      border: 1px solid rgba(61,43,31,0.15); cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
+      color: var(--brown); background: var(--cream);
+    }
 
     .map-status {
       font-size: 0.85rem; color: var(--muted);
@@ -173,6 +179,14 @@
       <input type="text" id="location-input" aria-label="Your postcode or town"
         placeholder="e.g. DE14 1AA or Burton upon Trent"/>
       <button type="button" id="location-search-btn">🔍 Find nearby</button>
+      <select id="radius-filter" aria-label="Maximum distance" title="Only show listings within this distance of your location">
+        <option value="0">Any distance</option>
+        <option value="1">Within 1 mi</option>
+        <option value="3">Within 3 mi</option>
+        <option value="5">Within 5 mi</option>
+        <option value="10">Within 10 mi</option>
+        <option value="25">Within 25 mi</option>
+      </select>
     </div>
     <p class="map-status" id="map-status">Loading listings...</p>
     <div class="map-layout">
@@ -246,9 +260,10 @@
   // Default centre — UK midpoint
   const map = L.map('map', { scrollWheelZoom: false }).setView([52.5, -1.5], 7);
 
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    maxZoom: 20,
+    subdomains: 'abcd',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>'
   }).addTo(map);
 
   // Geocode a UK postcode using postcodes.io (free, no key needed).
@@ -295,17 +310,19 @@
     return 2 * R * Math.asin(Math.sqrt(h));
   }
 
+  // Distances are approximate: listings are plotted at their postcode-district
+  // centre plus a privacy offset, so we show a "~" and avoid false precision.
   function formatDistance(miles) {
-    if (miles < 0.1) return 'Nearby';
-    if (miles < 10) return `${miles.toFixed(1)} mi`;
-    return `${Math.round(miles)} mi`;
+    if (miles < 0.5) return '< 1 mi';
+    return `~${Math.round(miles)} mi`;
   }
 
-  // Load available listings from Firestore
+  // Load listings from Firestore: available + claimed (claimed shown greyed);
+  // archived is hidden.
   let snapshot;
   try {
     snapshot = await db.collection('listings')
-      .where('status', '==', 'available')
+      .where('status', 'in', ['available', 'claimed'])
       .get();
   } catch (e) {
     statusEl.textContent = 'Could not load listings.';
@@ -314,8 +331,8 @@
   }
 
   if (snapshot.empty) {
-    statusEl.textContent = 'No available listings at the moment.';
-    listEl.innerHTML = '<div class="listings-column-empty">No available listings at the moment.</div>';
+    statusEl.textContent = 'No listings to show yet.';
+    listEl.innerHTML = '<div class="listings-column-empty">No listings to show yet.</div>';
     map.setView([52.5, -1.5], 7);
     return;
   }
@@ -330,9 +347,13 @@
     const area = getOutwardCode(d.postcode);
     if (!area) return;
 
-    const coords = await geocodePostcode(area);
-    if (!coords) return;
+    const base = await geocodeOutcode(area);
+    if (!base) return;
+    // Offset each listing so same-district listings don't stack on one point.
+    const coords = jitterCoords(base.lat, base.lng, doc.id);
 
+    const claimed = d.status === 'claimed';
+    const color = claimed ? '#9A8578' : '#E8733A';
     const animal = d.animals && d.animals.length ? d.animals[0] : 'Pet';
     const image = d.imageUrls && d.imageUrls.length
       ? `<img src="${d.imageUrls[0]}" style="width:100%;height:80px;object-fit:cover;border-radius:8px;margin-bottom:8px">`
@@ -341,7 +362,7 @@
     const html = `
       <div style="min-width:200px;font-family:'DM Sans',sans-serif">
         ${image}
-        <div style="font-weight:900;color:#3D2B1F;font-size:0.95rem">${d.itemName || 'Item'}</div>
+        <div style="font-weight:900;color:#3D2B1F;font-size:0.95rem">${d.itemName || 'Item'}${claimed ? ' <span style="color:#9A8578;font-weight:700">· Claimed</span>' : ''}</div>
         <div style="margin-top:4px;color:#7A5C4A;font-size:0.8rem;font-weight:600">${animal} · ${area} · Free</div>
         ${d.description ? `<div style="margin-top:6px;color:#9A8578;font-size:0.78rem">${d.description.slice(0, 80)}${d.description.length > 80 ? '...' : ''}</div>` : ''}
         <div style="margin-top:10px">
@@ -350,13 +371,14 @@
       </div>
     `;
 
-    // A soft circle signals "approximate area", not a precise address.
-    L.circle([coords.lat, coords.lng], {
-      radius: 900, color: '#E8733A', weight: 1, fillColor: '#E8733A', fillOpacity: 0.12
-    }).addTo(map).bindPopup(html);
-    const marker = L.marker([coords.lat, coords.lng]).addTo(map).bindPopup(html);
+    // A soft circle signals "approximate area"; the pin makes it clickable.
+    const circle = L.circle([coords.lat, coords.lng], {
+      radius: 600, color, weight: 1, fillColor: color, fillOpacity: 0.12
+    }).addTo(map);
+    const marker = L.marker([coords.lat, coords.lng], { opacity: claimed ? 0.55 : 1 })
+      .addTo(map).bindPopup(html);
     const createdMillis = (d.createdAt && d.createdAt.toMillis) ? d.createdAt.toMillis() : 0;
-    listings.push({ data: d, coords, marker, createdMillis });
+    listings.push({ data: d, coords, marker, circle, claimed, createdMillis });
   });
 
   await Promise.all(promises);
@@ -367,44 +389,89 @@
     return;
   }
 
-  // Render the list column. If `origin` is provided, sort by distance
-  // ascending and show a distance badge; otherwise fall back to
-  // newest-first (matching the pre-list behaviour of showing everything).
-  function renderList(origin) {
-    const ordered = listings.slice();
-    if (origin) {
-      ordered.forEach(l => { l.distance = haversineMiles(origin, l.coords); });
-      ordered.sort((a, b) => a.distance - b.distance);
-    } else {
-      ordered.forEach(l => { l.distance = null; });
-      ordered.sort((a, b) => b.createdMillis - a.createdMillis);
-    }
+  // ── Filtering & rendering ─────────────────────────────────
+  let currentOrigin = null;   // { lat, lng } once a location is searched
+  let currentRadius = 0;      // miles; 0 = any distance
 
-    listEl.innerHTML = ordered.map((l, i) => {
+  // Listings to show for the current origin + radius, sorted.
+  function visibleListings() {
+    let vis = listings.slice();
+    if (currentOrigin) {
+      vis.forEach(l => { l.distance = haversineMiles(currentOrigin, l.coords); });
+      if (currentRadius > 0) vis = vis.filter(l => l.distance <= currentRadius);
+      vis.sort((a, b) => a.distance - b.distance);
+    } else {
+      vis.forEach(l => { l.distance = null; });
+      vis.sort((a, b) => b.createdMillis - a.createdMillis);
+    }
+    return vis;
+  }
+
+  // Show only the visible listings' markers/circles; hide the rest.
+  function syncMarkers(visSet) {
+    listings.forEach(l => {
+      const show = visSet.has(l);
+      [l.marker, l.circle].forEach(layer => {
+        if (show && !map.hasLayer(layer)) layer.addTo(map);
+        else if (!show && map.hasLayer(layer)) map.removeLayer(layer);
+      });
+    });
+  }
+
+  function renderList(vis) {
+    if (!vis.length) {
+      listEl.innerHTML = '<div class="listings-column-empty">No listings match — try a wider distance.</div>';
+      return;
+    }
+    listEl.innerHTML = vis.map((l) => {
       const d = l.data;
-      const bgClass = `bg-${(i % 6) + 1}`;
+      const idx = listings.indexOf(l);
+      const bgClass = `bg-${(idx % 6) + 1}`;
       const animal = d.animals && d.animals.length ? d.animals[0] : null;
       let imgContent = animalEmojis[animal] || '📦';
       if (d.imageUrls && d.imageUrls.length) {
         imgContent = `<img src="${d.imageUrls[0]}" alt="">`;
       }
       const animalLabel = animal || 'Pet';
+      const claimedTag = l.claimed ? ' · <span style="color:#9A8578;font-weight:700">Claimed</span>' : '';
       const distanceHtml = l.distance != null
         ? `<div class="map-listing-distance">📍 ${formatDistance(l.distance)}</div>`
         : `<div class="map-listing-meta">📍 ${getOutwardCode(d.postcode) || 'Nearby'}</div>`;
-      // markerIndex points back into the shared `listings` array
-      const markerIndex = listings.indexOf(l);
       return `
-        <button type="button" class="map-listing-card" data-marker-index="${markerIndex}">
+        <button type="button" class="map-listing-card" data-marker-index="${idx}">
           <div class="map-listing-card-img ${bgClass}">${imgContent}</div>
           <div class="map-listing-card-body">
             <h4>${d.itemName || 'Item'}</h4>
-            <div class="map-listing-meta">${animalLabel} · Free</div>
+            <div class="map-listing-meta">${animalLabel} · Free${claimedTag}</div>
             ${distanceHtml}
           </div>
         </button>
       `;
     }).join('');
+  }
+
+  function fitView(vis) {
+    if (!vis.length) return;
+    const points = vis.map(l => [l.coords.lat, l.coords.lng]);
+    if (currentOrigin) points.push([currentOrigin.lat, currentOrigin.lng]);
+    if (points.length === 1) map.setView(points[0], 13);
+    else map.fitBounds(L.latLngBounds(points).pad(0.25));
+  }
+
+  function statusText(count) {
+    const n = `${count} listing${count !== 1 ? 's' : ''}`;
+    if (!currentOrigin) return `${n} — enter a postcode to sort by distance`;
+    const within = currentRadius > 0 ? ` within ~${currentRadius} mi` : '';
+    return `${n}${within}, nearest first`;
+  }
+
+  // Recompute map + list from the current origin + radius.
+  function refresh(fit) {
+    const vis = visibleListings();
+    syncMarkers(new Set(vis));
+    renderList(vis);
+    if (fit) fitView(vis);
+    statusEl.textContent = statusText(vis.length);
   }
 
   // Wire list ↔ map: clicking a card pans to that marker and opens its popup.
@@ -420,21 +487,15 @@
     l.marker.openPopup();
   });
 
-  // Fallback view: fit map to all markers, list newest-first.
   function showAll() {
+    currentOrigin = null;
     clearOriginMarker();
-    const points = listings.map(l => [l.coords.lat, l.coords.lng]);
-    if (points.length === 1) {
-      map.setView(points[0], 14);
-    } else {
-      map.fitBounds(L.latLngBounds(points).pad(0.25));
-    }
-    renderList(null);
-    statusEl.textContent =
-      `${listings.length} available listing${listings.length !== 1 ? 's' : ''} — enter a postcode to sort by distance`;
+    refresh(true);
   }
 
-  // Apply a searched/origin location: center map, sort list by distance.
+  // Apply a searched/origin location: center map + sort/filter by distance.
+  // The origin uses the viewer's own exact postcode/town (precise is fine —
+  // it's their location, and the listing points are already approximate).
   async function applyLocation(postcode) {
     const query = (postcode || '').trim();
     if (!query) { showAll(); return; }
@@ -445,14 +506,12 @@
       showAll();
       return;
     }
-    map.setView([origin.lat, origin.lng], 11, { animate: true });
+    currentOrigin = origin;
     clearOriginMarker();
     originMarker = L.circleMarker([origin.lat, origin.lng], {
       radius: 8, color: '#E8733A', fillColor: '#E8733A', fillOpacity: 0.9, weight: 2
     }).addTo(map).bindPopup('<b>Your location</b>');
-    renderList(origin);
-    statusEl.textContent =
-      `${listings.length} available listing${listings.length !== 1 ? 's' : ''}, sorted by distance from ${query}`;
+    refresh(true);
   }
 
   // Manual search handlers
@@ -460,6 +519,18 @@
   inputEl.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') applyLocation(inputEl.value);
   });
+
+  // Radius filter: re-filter in place (needs a searched location to apply).
+  const radiusEl = document.getElementById('radius-filter');
+  if (radiusEl) {
+    radiusEl.addEventListener('change', () => {
+      currentRadius = parseInt(radiusEl.value, 10) || 0;
+      if (!currentOrigin && currentRadius > 0) {
+        statusEl.textContent = 'Enter your postcode to filter by distance.';
+      }
+      refresh(true);
+    });
+  }
 
   // Initial render: show everything (fallback) until we know the user's postcode.
   showAll();

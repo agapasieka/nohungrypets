@@ -21,6 +21,58 @@ function getOutwardCode(postcode) {
   return cleaned.slice(0, cleaned.length - 3);
 }
 
+// Geocode a postcode DISTRICT (outward code, e.g. "SN5") to its centroid via
+// postcodes.io's /outcodes endpoint — the proper district centre, not an
+// arbitrary matching postcode. Cached per outcode so each district is looked
+// up once per page load even when many listings share it.
+const _outcodeCache = new Map();
+async function geocodeOutcode(outward) {
+  if (!outward) return null;
+  const key = String(outward).trim().toUpperCase();
+  if (!key) return null;
+  if (_outcodeCache.has(key)) return _outcodeCache.get(key);
+  let coords = null;
+  try {
+    const res = await fetch(`https://api.postcodes.io/outcodes/${encodeURIComponent(key)}`);
+    const data = await res.json();
+    if (data.status === 200 && data.result &&
+        typeof data.result.latitude === 'number') {
+      coords = { lat: data.result.latitude, lng: data.result.longitude };
+    }
+  } catch (e) {}
+  if (!coords) {
+    // Fallback: fuzzy postcode query (covers odd or not-found outcodes).
+    try {
+      const res = await fetch(`https://api.postcodes.io/postcodes?q=${encodeURIComponent(key)}&limit=1`);
+      const data = await res.json();
+      if (data.status === 200 && data.result && data.result.length) {
+        coords = { lat: data.result[0].latitude, lng: data.result[0].longitude };
+      }
+    } catch (e) {}
+  }
+  _outcodeCache.set(key, coords);
+  return coords;
+}
+
+// Give a point a small, stable pseudo-random offset (up to ~1km) from a seed
+// (the listing id). Every listing in a district geocodes to the same centroid,
+// so plotting them raw stacks them on one point; jittering spreads them into
+// distinct spots WITHOUT revealing or implying an exact address. Deterministic,
+// so a listing stays put across reloads.
+function jitterCoords(lat, lng, seed) {
+  let h = 2166136261;
+  const s = String(seed || '');
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  const a = ((h >>> 0) % 10000) / 10000;
+  const b = ((Math.imul(h, 48271) >>> 0) % 10000) / 10000;
+  const dLat = (a - 0.5) * 0.016;   // ±0.008° ≈ ±0.9 km
+  const dLng = (b - 0.5) * 0.024;   // ±0.012° ≈ ±0.8 km at UK latitudes
+  return { lat: lat + dLat, lng: lng + dLng };
+}
+
 // Count listings that are new to this user and near them.
 // "New" = created after `sinceMillis` (their last visit / account creation).
 // "Near" = same postcode outward code. Own listings are excluded.
