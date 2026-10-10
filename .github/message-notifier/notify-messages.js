@@ -3,17 +3,21 @@
 //
 // It reads Firestore with a Firebase service account (admin access bypasses
 // security rules), finds conversations updated since the last run, and for
-// each participant who still has unread messages, emails them a summary.
-// A checkpoint in _meta/messageNotifier means each message triggers one
-// email, not one on every run.
+// each participant who still has unread messages, emails them a summary via
+// the Resend HTTP API. A checkpoint in _meta/messageNotifier means each
+// message triggers one email, not one on every run.
 //
-// Required environment variables (set as GitHub Actions secrets):
-//   FIREBASE_SERVICE_ACCOUNT - full JSON of a Firebase service account key
-//   MAIL_USERNAME            - SMTP username (e.g. a Gmail address) = From
-//   MAIL_PASSWORD            - SMTP password / app password
+// Reuses the same secrets as the marketing agent, so no new ones are needed:
+//   FIREBASE_SA_KEY  - full JSON of a Firebase service account key
+//   RESEND_API_KEY   - Resend API key
+//   FROM_EMAIL       - sender (optional; defaults to Resend's sandbox address)
+//
+// NOTE on Resend's free tier: the sandbox sender (onboarding@resend.dev) only
+// delivers to the address you signed up to Resend with. To actually reach
+// other members, verify nohungrypets.co.uk in Resend and set FROM_EMAIL to an
+// address on that domain (e.g. notifications@nohungrypets.co.uk).
 
 const admin = require('firebase-admin');
-const nodemailer = require('nodemailer');
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -24,14 +28,15 @@ function requireEnv(name) {
   return v;
 }
 
-const MAIL_USERNAME = requireEnv('MAIL_USERNAME');
-const MAIL_PASSWORD = requireEnv('MAIL_PASSWORD');
+const RESEND_API_KEY = requireEnv('RESEND_API_KEY');
+const FROM_EMAIL = process.env.FROM_EMAIL || 'onboarding@resend.dev';
+const RESEND_API_URL = 'https://api.resend.com/emails';
 
 let serviceAccount;
 try {
-  serviceAccount = JSON.parse(requireEnv('FIREBASE_SERVICE_ACCOUNT'));
+  serviceAccount = JSON.parse(requireEnv('FIREBASE_SA_KEY'));
 } catch (err) {
-  console.error('FIREBASE_SERVICE_ACCOUNT is not valid JSON:', err.message);
+  console.error('FIREBASE_SA_KEY is not valid JSON:', err.message);
   process.exit(1);
 }
 
@@ -46,24 +51,25 @@ function toDate(ts) {
   return ts && typeof ts.toDate === 'function' ? ts.toDate() : null;
 }
 
-let transporter = null;
-function getTransporter() {
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user: MAIL_USERNAME, pass: MAIL_PASSWORD }
-    });
-  }
-  return transporter;
-}
-
 async function sendEmail(to, subject, text) {
-  await getTransporter().sendMail({
-    from: `NoHungryPets <${MAIL_USERNAME}>`,
-    to,
-    subject,
-    text
+  const res = await fetch(RESEND_API_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${RESEND_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      from: `NoHungryPets <${FROM_EMAIL}>`,
+      to,
+      subject,
+      text
+    })
   });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Resend API error ${res.status}: ${body}`);
+  }
+  return res.json();
 }
 
 // Look up a member's email, cached so we fetch each user at most once.

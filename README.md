@@ -60,19 +60,17 @@ or Cloud Functions required. See
 How it works: the job reads Firestore with a Firebase **service account**
 (admin access, so no security-rules change is needed), finds conversations
 updated since the last run that still have unread messages, and emails each
-affected member a summary via SMTP. A checkpoint in `_meta/messageNotifier`
+affected member a summary via **Resend**. A checkpoint in `_meta/messageNotifier`
 ensures each message is emailed once, not on every run.
 
-**One-time setup** — add these under **Settings → Secrets and variables → Actions**:
+**Setup:** it reuses the marketing agent's existing secrets — `FIREBASE_SA_KEY`
+and `RESEND_API_KEY` — so there are **no new secrets to add**. Test on demand
+with **Actions → Message Notifier → Run workflow**.
 
-| Secret | What it is |
-| --- | --- |
-| `FIREBASE_SERVICE_ACCOUNT` | Full JSON of a Firebase service account key (Firebase Console → Project settings → Service accounts → *Generate new private key*) |
-| `MAIL_USERNAME` | The sending email address (e.g. a Gmail address) |
-| `MAIL_PASSWORD` | A Gmail **App Password** (requires 2-Step Verification), not the normal password |
-
-Test on demand with **Actions → Message Notifier → Run workflow**. Note: email
-goes out from `MAIL_USERNAME`, so Gmail's daily sending limits apply at scale.
+> **Reaching all members:** on Resend's free tier the sandbox sender
+> (`onboarding@resend.dev`) only delivers to your Resend signup address. To
+> email every member, [verify `nohungrypets.co.uk` in Resend](https://resend.com/domains)
+> and set a `FROM_EMAIL` repo **variable** (e.g. `notifications@nohungrypets.co.uk`).
 
 ## Automated PR Reviews
 

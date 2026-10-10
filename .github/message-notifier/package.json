@@ -2,10 +2,9 @@
   "name": "nohungrypets-message-notifier",
   "version": "1.0.0",
   "private": true,
-  "description": "Scheduled job: email the site owner when they have new unread messages.",
+  "description": "Scheduled job: email members when they have new unread messages.",
   "type": "commonjs",
   "dependencies": {
-    "firebase-admin": "^12.7.0",
-    "nodemailer": "^6.9.14"
+    "firebase-admin": "^12.7.0"
   }
 }
