@@ -1129,7 +1129,7 @@
     const grid = document.getElementById('recent-listings-grid');
     try {
       const snap = await db.collection('listings')
-        .where('status', '==', 'available')
+        .where('status', 'in', ['available', 'claimed'])
         .get();
 
       if (snap.empty) {
@@ -1137,6 +1137,11 @@
         return;
       }
       const docs = snap.docs.sort((a, b) => {
+        // Available first (they're the ones you can actually claim), then
+        // claimed to fill any gaps; within each group, newest first.
+        const sa = a.data().status === 'available' ? 0 : 1;
+        const sb = b.data().status === 'available' ? 0 : 1;
+        if (sa !== sb) return sa - sb;
         const ta = a.data().createdAt ? a.data().createdAt.toMillis() : 0;
         const tb = b.data().createdAt ? b.data().createdAt.toMillis() : 0;
         return tb - ta;
@@ -1158,11 +1163,19 @@
 
         const animalTags = l.animals ? l.animals.map(a => `<span class="animal-tag">${a}</span>`).join('') : '';
 
+        const isClaimed = l.status === 'claimed';
+        const badge = isClaimed
+          ? '<span class="listing-badge" style="background:var(--brown-mid)">Claimed</span>'
+          : '<span class="listing-badge">Available</span>';
+        const claimBtn = isClaimed
+          ? '<button class="btn-claim" disabled style="opacity:0.55;cursor:default">✓ Claimed</button>'
+          : '<button class="btn-claim" onclick="window.location.href=\'/listings\'">Claim →</button>';
+
         return `
           <div class="listing-card">
             <div class="listing-card-img ${bgClass}">
               ${imgContent}
-              <span class="listing-badge">Available</span>
+              ${badge}
             </div>
             <div class="listing-card-body">
               <h4>${l.itemName || 'Untitled item'}</h4>
@@ -1177,7 +1190,7 @@
                 <div class="user-avatar" style="background:${avColor}">${l.posterName ? l.posterName.charAt(0).toUpperCase() : '?'}</div>
                 <span class="user-name">${l.posterName || 'Member'}</span>
               </div>
-              <button class="btn-claim" onclick="window.location.href='/listings'">Claim →</button>
+              ${claimBtn}
             </div>
           </div>
         `;
