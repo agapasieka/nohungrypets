@@ -1306,9 +1306,10 @@
 
   const map = L.map('leaflet-map', { scrollWheelZoom: false }).setView([52.5, -1.5], 7);
 
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    maxZoom: 20,
+    subdomains: 'abcd',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>'
   }).addTo(map);
 
   async function geocodePostcode(postcode) {
@@ -1372,7 +1373,10 @@
 
   let snapshot;
   try {
-    snapshot = await db.collection('listings').where('status', '==', 'available').get();
+    // Available + claimed (claimed shown greyed); archived is hidden.
+    snapshot = await db.collection('listings')
+      .where('status', 'in', ['available', 'claimed'])
+      .get();
   } catch (e) { return; }
 
   if (snapshot.empty) return;
@@ -1384,9 +1388,13 @@
     // postcode — the pin is an approximate area, not a home address.
     const area = getOutwardCode(d.postcode);
     if (!area) return;
-    const coords = await geocodePostcode(area);
-    if (!coords) return;
+    const base = await geocodeOutcode(area);
+    if (!base) return;
+    // Offset each listing so same-district listings don't stack on one point.
+    const coords = jitterCoords(base.lat, base.lng, doc.id);
 
+    const claimed = d.status === 'claimed';
+    const color = claimed ? '#9A8578' : '#E8733A';
     const animal = d.animals && d.animals.length ? d.animals[0] : 'Pet';
     const image = d.imageUrls && d.imageUrls.length
       ? `<img src="${d.imageUrls[0]}" style="width:100%;height:80px;object-fit:cover;border-radius:8px;margin-bottom:8px">`
@@ -1395,17 +1403,19 @@
     const html = `
       <div style="min-width:200px;font-family:'DM Sans',sans-serif">
         ${image}
-        <div style="font-weight:900;color:#3D2B1F;font-size:0.95rem">${d.itemName || 'Item'}</div>
+        <div style="font-weight:900;color:#3D2B1F;font-size:0.95rem">${d.itemName || 'Item'}${claimed ? ' <span style="color:#9A8578;font-weight:700">· Claimed</span>' : ''}</div>
         <div style="margin-top:4px;color:#7A5C4A;font-size:0.8rem;font-weight:600">${animal} · ${area} · Free</div>
         <div style="margin-top:10px">
           <a href="/listings" style="color:#E8733A;font-weight:900;text-decoration:none;font-size:0.85rem">View listings →</a>
         </div>
       </div>
     `;
-    // A soft circle signals "approximate area", not a precise address.
+    // A soft circle signals "approximate area"; the pin makes it clickable.
     L.circle([coords.lat, coords.lng], {
-      radius: 900, color: '#E8733A', weight: 1, fillColor: '#E8733A', fillOpacity: 0.12
-    }).addTo(map).bindPopup(html);
+      radius: 600, color, weight: 1, fillColor: color, fillOpacity: 0.12
+    }).addTo(map);
+    L.marker([coords.lat, coords.lng], { opacity: claimed ? 0.55 : 1 })
+      .addTo(map).bindPopup(html);
     markers.push([coords.lat, coords.lng]);
   });
 
