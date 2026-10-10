@@ -1192,7 +1192,7 @@
             <div class="listing-card-body">
               <h4>${escapeHtml(l.itemName || 'Untitled item')}</h4>
               <div class="listing-meta">
-                <span>📍 ${escapeHtml(l.postcode || 'Nearby')}</span>
+                <span>📍 ${escapeHtml(getOutwardCode(l.postcode) || 'Nearby')}</span>
                 <span>🕐 ${formatTimeAgo(l.createdAt)}</span>
               </div>
               <div class="listing-animals">${animalTags}</div>
@@ -1380,8 +1380,11 @@
   const markers = [];
   const promises = snapshot.docs.map(async (doc) => {
     const d = doc.data();
-    if (!d.postcode) return;
-    const coords = await geocodePostcode(d.postcode);
+    // Only ever plot the postcode DISTRICT (outward code), never the full
+    // postcode — the pin is an approximate area, not a home address.
+    const area = getOutwardCode(d.postcode);
+    if (!area) return;
+    const coords = await geocodePostcode(area);
     if (!coords) return;
 
     const animal = d.animals && d.animals.length ? d.animals[0] : 'Pet';
@@ -1393,20 +1396,23 @@
       <div style="min-width:200px;font-family:'DM Sans',sans-serif">
         ${image}
         <div style="font-weight:900;color:#3D2B1F;font-size:0.95rem">${d.itemName || 'Item'}</div>
-        <div style="margin-top:4px;color:#7A5C4A;font-size:0.8rem;font-weight:600">${animal} · ${d.postcode} · Free</div>
+        <div style="margin-top:4px;color:#7A5C4A;font-size:0.8rem;font-weight:600">${animal} · ${area} · Free</div>
         <div style="margin-top:10px">
           <a href="/listings" style="color:#E8733A;font-weight:900;text-decoration:none;font-size:0.85rem">View listings →</a>
         </div>
       </div>
     `;
-    L.marker([coords.lat, coords.lng]).addTo(map).bindPopup(html);
+    // A soft circle signals "approximate area", not a precise address.
+    L.circle([coords.lat, coords.lng], {
+      radius: 900, color: '#E8733A', weight: 1, fillColor: '#E8733A', fillOpacity: 0.12
+    }).addTo(map).bindPopup(html);
     markers.push([coords.lat, coords.lng]);
   });
 
   await Promise.all(promises);
 
   if (markers.length === 1) {
-    map.setView(markers[0], 14);
+    map.setView(markers[0], 12);
   } else if (markers.length > 1) {
     map.fitBounds(L.latLngBounds(markers).pad(0.25));
   }

@@ -325,9 +325,12 @@
   const listings = [];
   const promises = snapshot.docs.map(async (doc) => {
     const d = doc.data();
-    if (!d.postcode) return;
+    // Only ever plot the postcode DISTRICT (outward code), never the full
+    // postcode — the pin is an approximate area, not a home address.
+    const area = getOutwardCode(d.postcode);
+    if (!area) return;
 
-    const coords = await geocodePostcode(d.postcode);
+    const coords = await geocodePostcode(area);
     if (!coords) return;
 
     const animal = d.animals && d.animals.length ? d.animals[0] : 'Pet';
@@ -339,7 +342,7 @@
       <div style="min-width:200px;font-family:'DM Sans',sans-serif">
         ${image}
         <div style="font-weight:900;color:#3D2B1F;font-size:0.95rem">${d.itemName || 'Item'}</div>
-        <div style="margin-top:4px;color:#7A5C4A;font-size:0.8rem;font-weight:600">${animal} · ${d.postcode} · Free</div>
+        <div style="margin-top:4px;color:#7A5C4A;font-size:0.8rem;font-weight:600">${animal} · ${area} · Free</div>
         ${d.description ? `<div style="margin-top:6px;color:#9A8578;font-size:0.78rem">${d.description.slice(0, 80)}${d.description.length > 80 ? '...' : ''}</div>` : ''}
         <div style="margin-top:10px">
           <a href="/listings" style="color:#E8733A;font-weight:900;text-decoration:none;font-size:0.85rem">View listings →</a>
@@ -347,6 +350,10 @@
       </div>
     `;
 
+    // A soft circle signals "approximate area", not a precise address.
+    L.circle([coords.lat, coords.lng], {
+      radius: 900, color: '#E8733A', weight: 1, fillColor: '#E8733A', fillOpacity: 0.12
+    }).addTo(map).bindPopup(html);
     const marker = L.marker([coords.lat, coords.lng]).addTo(map).bindPopup(html);
     const createdMillis = (d.createdAt && d.createdAt.toMillis) ? d.createdAt.toMillis() : 0;
     listings.push({ data: d, coords, marker, createdMillis });
@@ -384,7 +391,7 @@
       const animalLabel = animal || 'Pet';
       const distanceHtml = l.distance != null
         ? `<div class="map-listing-distance">📍 ${formatDistance(l.distance)}</div>`
-        : `<div class="map-listing-meta">📍 ${d.postcode || 'Nearby'}</div>`;
+        : `<div class="map-listing-meta">📍 ${getOutwardCode(d.postcode) || 'Nearby'}</div>`;
       // markerIndex points back into the shared `listings` array
       const markerIndex = listings.indexOf(l);
       return `
