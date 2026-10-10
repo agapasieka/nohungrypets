@@ -21,6 +21,27 @@ function getOutwardCode(postcode) {
   return cleaned.slice(0, cleaned.length - 3);
 }
 
+// Give a point a small, stable pseudo-random offset (up to ~1km) derived from
+// a seed (the listing id). Because every listing in a postcode district
+// geocodes to the same district centroid, plotting them raw stacks them on one
+// point. Jittering spreads them into distinct spots for the map WITHOUT
+// revealing (or implying) an exact address — the offset is well within the
+// district and is not the real location. It's deterministic, so a listing
+// stays put across reloads.
+function jitterCoords(lat, lng, seed) {
+  let h = 2166136261;
+  const s = String(seed || '');
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  const a = ((h >>> 0) % 10000) / 10000;              // 0..1
+  const b = ((Math.imul(h, 48271) >>> 0) % 10000) / 10000;
+  const dLat = (a - 0.5) * 0.016;   // ±0.008° ≈ ±0.9 km
+  const dLng = (b - 0.5) * 0.024;   // ±0.012° ≈ ±0.8 km at UK latitudes
+  return { lat: lat + dLat, lng: lng + dLng };
+}
+
 // Count listings that are new to this user and near them.
 // "New" = created after `sinceMillis` (their last visit / account creation).
 // "Near" = same postcode outward code. Own listings are excluded.

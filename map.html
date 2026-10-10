@@ -330,8 +330,10 @@
     const area = getOutwardCode(d.postcode);
     if (!area) return;
 
-    const coords = await geocodePostcode(area);
-    if (!coords) return;
+    const base = await geocodePostcode(area);
+    if (!base) return;
+    // Spread same-district listings apart (approximate, not a real address).
+    const coords = jitterCoords(base.lat, base.lng, doc.id);
 
     const animal = d.animals && d.animals.length ? d.animals[0] : 'Pet';
     const image = d.imageUrls && d.imageUrls.length
@@ -352,8 +354,8 @@
 
     // A soft circle signals "approximate area", not a precise address.
     L.circle([coords.lat, coords.lng], {
-      radius: 900, color: '#E8733A', weight: 1, fillColor: '#E8733A', fillOpacity: 0.12
-    }).addTo(map).bindPopup(html);
+      radius: 600, color: '#E8733A', weight: 1, fillColor: '#E8733A', fillOpacity: 0.12
+    }).addTo(map);
     const marker = L.marker([coords.lat, coords.lng]).addTo(map).bindPopup(html);
     const createdMillis = (d.createdAt && d.createdAt.toMillis) ? d.createdAt.toMillis() : 0;
     listings.push({ data: d, coords, marker, createdMillis });

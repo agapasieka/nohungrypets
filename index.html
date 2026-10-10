@@ -1384,8 +1384,10 @@
     // postcode — the pin is an approximate area, not a home address.
     const area = getOutwardCode(d.postcode);
     if (!area) return;
-    const coords = await geocodePostcode(area);
-    if (!coords) return;
+    const base = await geocodePostcode(area);
+    if (!base) return;
+    // Spread same-district listings apart (approximate, not a real address).
+    const coords = jitterCoords(base.lat, base.lng, doc.id);
 
     const animal = d.animals && d.animals.length ? d.animals[0] : 'Pet';
     const image = d.imageUrls && d.imageUrls.length
@@ -1402,10 +1404,12 @@
         </div>
       </div>
     `;
-    // A soft circle signals "approximate area", not a precise address.
+    // A soft circle signals "approximate area"; the pin makes it clickable and
+    // visible. Each listing is offset, so multiple in one district don't stack.
     L.circle([coords.lat, coords.lng], {
-      radius: 900, color: '#E8733A', weight: 1, fillColor: '#E8733A', fillOpacity: 0.12
-    }).addTo(map).bindPopup(html);
+      radius: 600, color: '#E8733A', weight: 1, fillColor: '#E8733A', fillOpacity: 0.12
+    }).addTo(map);
+    L.marker([coords.lat, coords.lng]).addTo(map).bindPopup(html);
     markers.push([coords.lat, coords.lng]);
   });
 
