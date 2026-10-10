@@ -17,8 +17,8 @@ on:
 
 permissions:
   contents: read
-  pull-requests: read
-  issues: read
+  pull-requests: write
+  issues: write
   id-token: write
 
 concurrency:
@@ -45,3 +45,27 @@ jobs:
           claude_args: >-
             --model claude-haiku-4-5
             --allowedTools "mcp__github_inline_comment__create_inline_comment"
+
+      # Always leave one visible confirmation comment so it's clear Claude ran,
+      # even when the review found nothing to flag. Updated in place each run
+      # (not a new comment every time), so it doesn't spam the thread.
+      - name: Post review confirmation
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          MARKER="<!-- claude-review-confirmation -->"
+          BODY="${MARKER}
+          🤖 **Claude (Haiku) reviewed this PR.** Any findings appear as inline comments above — no inline comments means nothing was flagged. ([view run](${RUN_URL}))"
+          EXISTING=$(gh api "repos/${REPO}/issues/${PR}/comments" --paginate \
+            --jq "[.[] | select(.body | contains(\"${MARKER}\"))][0].id // empty")
+          if [ -n "$EXISTING" ]; then
+            gh api -X PATCH "repos/${REPO}/issues/comments/${EXISTING}" -f body="$BODY" >/dev/null
+            echo "Updated existing confirmation comment ${EXISTING}."
+          else
+            gh api -X POST "repos/${REPO}/issues/${PR}/comments" -f body="$BODY" >/dev/null
+            echo "Posted new confirmation comment."
+          fi
