@@ -1,0 +1,44 @@
+name: Message Notifier
+
+# Emails the site owner when they have new unread messages. Runs on a schedule
+# (GitHub Actions is free on public repos). Also runnable on demand via the
+# "Run workflow" button for testing.
+on:
+  schedule:
+    - cron: "*/10 * * * *"   # every 10 minutes (GitHub may delay a few minutes)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: message-notifier
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        working-directory: .github/message-notifier
+        run: npm install --no-audit --no-fund
+
+      - name: Send notifications
+        working-directory: .github/message-notifier
+        run: node notify-messages.js
+        env:
+          # Defaults to the current site owner's UID; override with a repo
+          # variable named OWNER_UID if it ever changes.
+          OWNER_UID: ${{ vars.OWNER_UID || 'YVK880UJPFOaqwB2uk1lddqF2fK2' }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
