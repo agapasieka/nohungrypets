@@ -624,13 +624,17 @@
       btn.innerHTML = '🐾 Saving listing...';
 
       // Save to Firestore.
-      // NOTE: listings are publicly readable, so we deliberately do NOT store
-      // the poster's email here (that would expose it to anyone). The owner's
-      // email lives in the private users/{uid} doc and is reachable via userId.
+      // NOTE: listings are publicly readable, so we deliberately DON'T store
+      // anything that pinpoints the poster. The email is omitted entirely (it
+      // lives in the private users/{uid} doc), and only the postcode DISTRICT
+      // (outward code, e.g. "DE14") is stored — never the full postcode — so
+      // the public map/cards show an approximate area, not a home address.
+      // The exact collection point is arranged privately via messaging after
+      // a claim.
       await db.collection('listings').add({
         userId: user.uid,
         posterName: poster,
-        postcode: post,
+        postcode: getOutwardCode(post),
         itemName: name,
         category,
         condition,
