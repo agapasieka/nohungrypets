@@ -758,7 +758,7 @@
       if (snapshot.empty) {
         listingsContainer.innerHTML = '<p style="padding:1rem;color:var(--muted)">You haven\'t posted any listings yet.</p>';
       } else {
-        const animalEmojis = { 'Dog':'🦴','Cat':'🐟','Rabbit':'🥬','Small pets':'🌾','Bird':'🐦','Reptile':'🦎','Fish':'🐟','Horse':'🌿','Farm animal':'🌿' };
+        const animalEmojis = { 'Dog':'🐕','Cat':'🐈','Rabbit':'🐇','Small pets':'🐹','Bird':'🐦','Reptile':'🦎','Fish':'🐟','Horse':'🐴','Farm animal':'🐄' };
         const docs = snapshot.docs.sort((a, b) => {
           const ta = a.data().createdAt ? a.data().createdAt.toMillis() : 0;
           const tb = b.data().createdAt ? b.data().createdAt.toMillis() : 0;
