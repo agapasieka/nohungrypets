@@ -1113,6 +1113,18 @@
     'Fish':'🐟','Horse':'🐴','Farm animal':'🐄'
   };
 
+  // Show only the first name publicly, even if a full name was saved.
+  function firstName(full) {
+    return typeof full === 'string' && full.trim() ? full.trim().split(/\s+/)[0] : '';
+  }
+
+  // Escape user-supplied values before injecting into innerHTML (prevents XSS).
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
   function formatTimeAgo(timestamp) {
     if (!timestamp) return 'Just now';
     const seconds = Math.floor((new Date() - timestamp.toDate()) / 1000);
@@ -1155,13 +1167,13 @@
 
         let imgContent = '';
         if (l.imageUrls && l.imageUrls.length > 0) {
-          imgContent = `<img src="${l.imageUrls[0]}" style="width:100%;height:100%;object-fit:cover;">`;
+          imgContent = `<img src="${escapeHtml(l.imageUrls[0])}" style="width:100%;height:100%;object-fit:cover;">`;
         } else {
           const primaryAnimal = l.animals && l.animals.length > 0 ? l.animals[0] : null;
           imgContent = animalEmojis[primaryAnimal] || '📦';
         }
 
-        const animalTags = l.animals ? l.animals.map(a => `<span class="animal-tag">${a}</span>`).join('') : '';
+        const animalTags = l.animals ? l.animals.map(a => `<span class="animal-tag">${escapeHtml(a)}</span>`).join('') : '';
 
         const isClaimed = l.status === 'claimed';
         const badge = isClaimed
@@ -1178,17 +1190,17 @@
               ${badge}
             </div>
             <div class="listing-card-body">
-              <h4>${l.itemName || 'Untitled item'}</h4>
+              <h4>${escapeHtml(l.itemName || 'Untitled item')}</h4>
               <div class="listing-meta">
-                <span>📍 ${l.postcode || 'Nearby'}</span>
+                <span>📍 ${escapeHtml(l.postcode || 'Nearby')}</span>
                 <span>🕐 ${formatTimeAgo(l.createdAt)}</span>
               </div>
               <div class="listing-animals">${animalTags}</div>
             </div>
             <div class="listing-card-footer">
               <div class="user-info">
-                <div class="user-avatar" style="background:${avColor}">${l.posterName ? l.posterName.charAt(0).toUpperCase() : '?'}</div>
-                <span class="user-name">${l.posterName || 'Member'}</span>
+                <div class="user-avatar" style="background:${avColor}">${l.posterName ? escapeHtml(l.posterName.trim().charAt(0).toUpperCase()) : '?'}</div>
+                <span class="user-name">${escapeHtml(firstName(l.posterName) || 'Member')}</span>
               </div>
               ${claimBtn}
             </div>
