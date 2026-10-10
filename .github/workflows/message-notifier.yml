@@ -20,16 +20,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: "20"
+          # This job runs `npm ci`, whose install scripts could read a
+          # persisted checkout credential; the notifier doesn't need it.
+          persist-credentials: false
 
+      # Node 20+ is preinstalled on ubuntu-latest, so no setup-node step is
+      # needed. npm ci installs from the committed lockfile (frozen deps).
       - name: Install dependencies
         working-directory: .github/message-notifier
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Send notifications
         working-directory: .github/message-notifier
@@ -39,7 +40,7 @@ jobs:
           FIREBASE_SA_KEY: ${{ secrets.FIREBASE_SA_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           # Defaults to Resend's sandbox sender, which only delivers to your
-          # Resend signup address. Verify nohungrypets.co.uk in Resend and set
-          # a FROM_EMAIL repo variable (e.g. notifications@nohungrypets.co.uk)
-          # to reach all members.
+          # Resend signup address. Set a FROM_EMAIL repo variable on your
+          # verified domain (e.g. notifications@nohungrypets.co.uk) to reach
+          # all members.
           FROM_EMAIL: ${{ vars.FROM_EMAIL || 'onboarding@resend.dev' }}

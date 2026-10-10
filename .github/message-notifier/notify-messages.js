@@ -73,19 +73,16 @@ async function sendEmail(to, subject, text) {
 }
 
 // Look up a member's email, cached so we fetch each user at most once.
+// Throws on a read error (treated as a transient failure by the caller);
+// returns null only when the member genuinely has no usable email.
 const emailCache = new Map();
 async function getUserEmail(uid) {
   if (emailCache.has(uid)) return emailCache.get(uid);
-  let email = null;
-  try {
-    const doc = await db.collection('users').doc(uid).get();
-    const data = doc.exists ? doc.data() : null;
-    if (data && typeof data.email === 'string' && data.email.includes('@')) {
-      email = data.email;
-    }
-  } catch (err) {
-    console.error(`Could not read user ${uid}:`, err.message);
-  }
+  const doc = await db.collection('users').doc(uid).get();
+  const data = doc.exists ? doc.data() : null;
+  const email = (data && typeof data.email === 'string' && data.email.includes('@'))
+    ? data.email
+    : null;
   emailCache.set(uid, email);
   return email;
 }
@@ -104,30 +101,47 @@ async function main() {
     .get();
 
   // Group the unread conversations by the member who needs to hear about them.
-  const byRecipient = new Map(); // uid -> [{ about, preview }]
+  // `times` holds each conversation's lastUpdated so we can roll the checkpoint
+  // back to the earliest failed one and retry it next run.
+  const byRecipient = new Map(); // uid -> { items: [{about, preview}], times: [Date] }
   snap.forEach(doc => {
     const c = doc.data() || {};
     const participants = Array.isArray(c.participants) ? c.participants : [];
     const unreadCount = c.unreadCount || {};
     const about = c.relatedListingName ? `"${c.relatedListingName}"` : 'a listing';
     const preview = (c.lastMessage || '').trim().slice(0, 100);
+    const updated = toDate(c.lastUpdated);
     participants.forEach(uid => {
       if ((unreadCount[uid] || 0) > 0) {
-        if (!byRecipient.has(uid)) byRecipient.set(uid, []);
-        byRecipient.get(uid).push({ about, preview });
+        if (!byRecipient.has(uid)) byRecipient.set(uid, { items: [], times: [] });
+        const g = byRecipient.get(uid);
+        g.items.push({ about, preview });
+        if (updated) g.times.push(updated);
       }
     });
   });
 
   let sent = 0;
-  for (const [uid, items] of byRecipient) {
-    const email = await getUserEmail(uid);
+  const failedTimes = []; // lastUpdated of conversations we couldn't deliver
+
+  for (const [uid, group] of byRecipient) {
+    let email;
+    try {
+      email = await getUserEmail(uid);
+    } catch (err) {
+      // Transient read failure — keep these for retry next run.
+      console.error(`User read failed for ${uid}:`, err.message);
+      failedTimes.push(...group.times);
+      continue;
+    }
     if (!email) {
+      // No usable email: retrying won't help, so don't hold the checkpoint.
       console.log(`Skipping ${uid}: no email on record.`);
       continue;
     }
-    const n = items.length;
-    const lines = items.map(it => `• ${it.about}${it.preview ? ` — ${it.preview}` : ''}`);
+
+    const n = group.items.length;
+    const lines = group.items.map(it => `• ${it.about}${it.preview ? ` — ${it.preview}` : ''}`);
     const subject = `🐾 ${n} new message${n > 1 ? 's' : ''} on NoHungryPets`;
     const text =
       `Hi! You have ${n} new message${n > 1 ? 's' : ''} waiting on NoHungryPets:\n\n` +
@@ -139,14 +153,28 @@ async function main() {
       await sendEmail(email, subject, text);
       sent++;
     } catch (err) {
+      // Delivery failed — keep for retry so the message isn't lost.
       console.error(`Failed to email ${uid}:`, err.message);
+      failedTimes.push(...group.times);
     }
+  }
+
+  // Advance the checkpoint — but never past a conversation we failed to
+  // deliver, so the next run retries it. On failure we roll back to just
+  // before the earliest failed conversation (a few successful recipients in
+  // that window may get a duplicate on retry, which is preferable to a lost
+  // message).
+  let checkpoint = now;
+  if (failedTimes.length > 0) {
+    const earliest = Math.min(...failedTimes.map(d => d.getTime()));
+    checkpoint = new Date(earliest - 1);
+    console.log(`${failedTimes.length} delivery failure(s); holding checkpoint for retry.`);
   }
 
   console.log(`Checked ${snap.size} updated conversation(s); emailed ${sent} member(s).`);
 
   await META_REF.set(
-    { lastCheck: admin.firestore.Timestamp.fromDate(now) },
+    { lastCheck: admin.firestore.Timestamp.fromDate(checkpoint) },
     { merge: true }
   );
 }
