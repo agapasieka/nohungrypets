@@ -1,0 +1,10 @@
+{
+  "name": "nohungrypets-owner-digest",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Scheduled job: email the owner a digest of new signups, listings and message activity.",
+  "type": "commonjs",
+  "dependencies": {
+    "firebase-admin": "^12.7.0"
+  }
+}

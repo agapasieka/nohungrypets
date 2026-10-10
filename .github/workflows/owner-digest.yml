@@ -1,0 +1,40 @@
+name: Owner Digest
+
+# Emails the owner a once-daily digest of new signups, new listings and
+# message activity. Free (GitHub Actions on public repos). Separate from the
+# per-member message notifier. Also runnable on demand for testing.
+on:
+  schedule:
+    - cron: "0 8 * * *"   # 08:00 UTC daily (shifts an hour with UK DST)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: owner-digest
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install dependencies
+        working-directory: .github/owner-digest
+        run: npm ci --no-audit --no-fund
+
+      - name: Send digest
+        working-directory: .github/owner-digest
+        run: node digest.js
+        env:
+          FIREBASE_SA_KEY: ${{ secrets.FIREBASE_SA_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          FROM_EMAIL: ${{ vars.FROM_EMAIL || 'onboarding@resend.dev' }}
+          # Where the digest is sent. Add as a repo variable (DIGEST_TO) or
+          # secret; an address on your verified Resend domain's account.
+          DIGEST_TO: ${{ vars.DIGEST_TO || secrets.DIGEST_TO }}
