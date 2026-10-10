@@ -1,6 +1,6 @@
 name: Message Notifier
 
-# Emails the site owner when they have new unread messages. Runs on a schedule
+# Emails any member who has new unread messages. Runs on a schedule
 # (GitHub Actions is free on public repos). Also runnable on demand via the
 # "Run workflow" button for testing.
 on:
@@ -35,10 +35,6 @@ jobs:
         working-directory: .github/message-notifier
         run: node notify-messages.js
         env:
-          # Defaults to the current site owner's UID; override with a repo
-          # variable named OWNER_UID if it ever changes.
-          OWNER_UID: ${{ vars.OWNER_UID || 'YVK880UJPFOaqwB2uk1lddqF2fK2' }}
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
           MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
-          MAIL_TO: ${{ secrets.MAIL_TO }}

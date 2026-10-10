@@ -623,11 +623,13 @@
 
       btn.innerHTML = '🐾 Saving listing...';
 
-      // Save to Firestore
+      // Save to Firestore.
+      // NOTE: listings are publicly readable, so we deliberately do NOT store
+      // the poster's email here (that would expose it to anyone). The owner's
+      // email lives in the private users/{uid} doc and is reachable via userId.
       await db.collection('listings').add({
         userId: user.uid,
         posterName: poster,
-        posterEmail: email,
         postcode: post,
         itemName: name,
         category,

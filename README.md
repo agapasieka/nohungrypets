@@ -48,6 +48,32 @@ text/image generation and Resend for delivery. See
 [`marketing-agent/script/README.md`](marketing-agent/script/README.md) for
 how it works and how to configure it.
 
+## Message Notifications
+
+Members get an **email when someone messages them**, so replies to a claim
+don't sit unseen. Like the marketing pipeline, it's a **free, no-billing-account**
+scheduled GitHub Actions workflow (every ~10 minutes) — no Firebase Blaze plan
+or Cloud Functions required. See
+[`.github/message-notifier/`](.github/message-notifier/) and
+[`.github/workflows/message-notifier.yml`](.github/workflows/message-notifier.yml).
+
+How it works: the job reads Firestore with a Firebase **service account**
+(admin access, so no security-rules change is needed), finds conversations
+updated since the last run that still have unread messages, and emails each
+affected member a summary via SMTP. A checkpoint in `_meta/messageNotifier`
+ensures each message is emailed once, not on every run.
+
+**One-time setup** — add these under **Settings → Secrets and variables → Actions**:
+
+| Secret | What it is |
+| --- | --- |
+| `FIREBASE_SERVICE_ACCOUNT` | Full JSON of a Firebase service account key (Firebase Console → Project settings → Service accounts → *Generate new private key*) |
+| `MAIL_USERNAME` | The sending email address (e.g. a Gmail address) |
+| `MAIL_PASSWORD` | A Gmail **App Password** (requires 2-Step Verification), not the normal password |
+
+Test on demand with **Actions → Message Notifier → Run workflow**. Note: email
+goes out from `MAIL_USERNAME`, so Gmail's daily sending limits apply at scale.
+
 ## Automated PR Reviews
 
 [CodeRabbit](https://coderabbit.ai) reviews every pull request automatically
