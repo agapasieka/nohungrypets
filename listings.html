@@ -430,6 +430,11 @@
     
     // Apply filters
     const filtered = allListings.filter(l => {
+      // Hide archived listings from the public browse page; available and
+      // claimed stay visible (claimed shows greyed-out so there's visible
+      // activity). Treat a missing status as available (legacy records).
+      if (l.status === 'archived') return false;
+
       let animalMatch = true;
       if (filters.animal !== 'All') {
         animalMatch = l.animals && l.animals.includes(filters.animal);
