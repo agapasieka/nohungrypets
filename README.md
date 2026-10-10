@@ -48,6 +48,30 @@ text/image generation and Resend for delivery. See
 [`marketing-agent/script/README.md`](marketing-agent/script/README.md) for
 how it works and how to configure it.
 
+## Message Notifications
+
+Members get an **email when someone messages them**, so replies to a claim
+don't sit unseen. Like the marketing pipeline, it's a **free, no-billing-account**
+scheduled GitHub Actions workflow (every ~10 minutes) — no Firebase Blaze plan
+or Cloud Functions required. See
+[`.github/message-notifier/`](.github/message-notifier/) and
+[`.github/workflows/message-notifier.yml`](.github/workflows/message-notifier.yml).
+
+How it works: the job reads Firestore with a Firebase **service account**
+(admin access, so no security-rules change is needed), finds conversations
+updated since the last run that still have unread messages, and emails each
+affected member a summary via **Resend**. A checkpoint in `_meta/messageNotifier`
+ensures each message is emailed once, not on every run.
+
+**Setup:** it reuses the marketing agent's existing secrets — `FIREBASE_SA_KEY`
+and `RESEND_API_KEY` — so there are **no new secrets to add**. Test on demand
+with **Actions → Message Notifier → Run workflow**.
+
+> **Reaching all members:** on Resend's free tier the sandbox sender
+> (`onboarding@resend.dev`) only delivers to your Resend signup address. To
+> email every member, [verify `nohungrypets.co.uk` in Resend](https://resend.com/domains)
+> and set a `FROM_EMAIL` repo **variable** (e.g. `notifications@nohungrypets.co.uk`).
+
 ## Automated PR Reviews
 
 [CodeRabbit](https://coderabbit.ai) reviews every pull request automatically

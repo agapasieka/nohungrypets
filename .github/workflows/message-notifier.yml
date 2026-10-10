@@ -1,0 +1,46 @@
+name: Message Notifier
+
+# Emails any member who has new unread messages. Runs on a schedule
+# (GitHub Actions is free on public repos). Also runnable on demand via the
+# "Run workflow" button for testing.
+on:
+  schedule:
+    - cron: "*/10 * * * *"   # every 10 minutes (GitHub may delay a few minutes)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: message-notifier
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # This job runs `npm ci`, whose install scripts could read a
+          # persisted checkout credential; the notifier doesn't need it.
+          persist-credentials: false
+
+      # Node 20+ is preinstalled on ubuntu-latest, so no setup-node step is
+      # needed. npm ci installs from the committed lockfile (frozen deps).
+      - name: Install dependencies
+        working-directory: .github/message-notifier
+        run: npm ci --no-audit --no-fund
+
+      - name: Send notifications
+        working-directory: .github/message-notifier
+        run: node notify-messages.js
+        env:
+          # Reuses the marketing agent's existing secrets — nothing new to add.
+          FIREBASE_SA_KEY: ${{ secrets.FIREBASE_SA_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          # Defaults to Resend's sandbox sender, which only delivers to your
+          # Resend signup address. Set a FROM_EMAIL repo variable on your
+          # verified domain (e.g. notifications@nohungrypets.co.uk) to reach
+          # all members.
+          FROM_EMAIL: ${{ vars.FROM_EMAIL || 'onboarding@resend.dev' }}
