@@ -1,0 +1,36 @@
+name: Scrub posterEmail (one-off)
+
+# One-off maintenance job: remove the legacy `posterEmail` field from old
+# listing documents. Manual only. Defaults to a dry run (count/list); set the
+# `apply` input to "true" to actually delete the field. Safe to delete this
+# workflow and folder once the scrub is done.
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Set to "true" to delete the field. Otherwise it only counts (dry run).'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: read
+
+jobs:
+  scrub:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install dependencies
+        working-directory: .github/scrub-poster-email
+        run: npm ci --no-audit --no-fund
+
+      - name: Run scrub
+        working-directory: .github/scrub-poster-email
+        run: node scrub.js
+        env:
+          FIREBASE_SA_KEY: ${{ secrets.FIREBASE_SA_KEY }}
+          APPLY: ${{ github.event.inputs.apply }}

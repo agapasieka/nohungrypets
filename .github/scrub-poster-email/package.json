@@ -1,0 +1,10 @@
+{
+  "name": "nohungrypets-scrub-poster-email",
+  "version": "1.0.0",
+  "private": true,
+  "description": "One-off: remove the legacy posterEmail field from old listings.",
+  "type": "commonjs",
+  "dependencies": {
+    "firebase-admin": "^12.7.0"
+  }
+}
