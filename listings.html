@@ -554,14 +554,14 @@
       
       let imgContent = '';
       if (l.imageUrls && l.imageUrls.length > 0) {
-        imgContent = `<img src="${l.imageUrls[0]}" style="width:100%;height:100%;object-fit:cover;">`;
+        imgContent = `<img src="${escapeHtml(l.imageUrls[0])}" style="width:100%;height:100%;object-fit:cover;">`;
       } else {
         const primaryAnimal = l.animals && l.animals.length > 0 ? l.animals[0] : null;
         const emoji = animalEmojis[primaryAnimal] || '📦';
         imgContent = emoji;
       }
 
-      const animalTags = l.animals ? l.animals.map(a => `<span class="animal-tag">${a}</span>`).join('') : '';
+      const animalTags = l.animals ? l.animals.map(a => `<span class="animal-tag">${escapeHtml(a)}</span>`).join('') : '';
 
       let badgeText = 'Available';
       let badgeClass = 'badge-available';
@@ -588,7 +588,7 @@
         claimBtnOnClick = '';
       }
 
-      const initial = l.posterName ? l.posterName.trim().charAt(0).toUpperCase() : '?';
+      const initial = l.posterName ? escapeHtml(l.posterName.trim().charAt(0).toUpperCase()) : '?';
       // Clicking the card opens the detail modal; it no longer claims.
       return `
         <div class="listing-card" data-listing-id="${l.id}" role="button" tabindex="0"
@@ -602,9 +602,9 @@
           </div>
           <div class="listing-card-content">
             <div class="listing-card-body">
-              <h4>${l.itemName}</h4>
+              <h4>${escapeHtml(l.itemName || 'Untitled item')}</h4>
               <div class="listing-meta">
-                <span>📍 ${l.postcode || 'Nearby'}</span>
+                <span>📍 ${escapeHtml(l.postcode || 'Nearby')}</span>
                 <span>🕐 ${formatTimeAgo(l.createdAt)}</span>
               </div>
               <div class="listing-animals">${animalTags}</div>
@@ -612,7 +612,7 @@
             <div class="listing-card-footer">
               <div class="user-info">
                 <div class="user-avatar ${avClass}">${initial}</div>
-                <span class="user-name">${firstName(l.posterName) || 'Guest'}</span>
+                <span class="user-name">${escapeHtml(firstName(l.posterName) || 'Guest')}</span>
               </div>
               <button class="${claimBtnClass}" ${claimBtnDisabled} ${claimBtnOnClick}>${claimBtnText}</button>
             </div>
@@ -677,20 +677,26 @@
     buttons.forEach(b => { b.disabled = true; b.textContent = 'Claiming…'; });
 
     try {
-      const listingDoc = await db.collection('listings').doc(listingId).get();
-      if (!listingDoc.exists) throw new Error('Listing not found');
+      const listingRef = db.collection('listings').doc(listingId);
 
-      const listingData = listingDoc.data();
-      const ownerId = listingData.userId;
-      const itemName = listingData.itemName || 'Untitled Item';
-
-      // Mark as claimed
-      await db.collection('listings').doc(listingId).update({
-        status: 'claimed',
-        claimedAt: firebase.firestore.FieldValue.serverTimestamp()
+      // Claim atomically: read status and write 'claimed' inside one
+      // transaction so a stale page or two simultaneous clicks can't both
+      // succeed (which would double-count and double-message the owner).
+      let ownerId, itemName;
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(listingRef);
+        if (!snap.exists) throw new Error('not-found');
+        const data = snap.data();
+        if (data.status !== 'available') throw new Error('already-claimed');
+        ownerId = data.userId;
+        itemName = data.itemName || 'Untitled Item';
+        tx.update(listingRef, {
+          status: 'claimed',
+          claimedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
       });
 
-      // Bump the claimant's own claims count
+      // Bump the claimant's own claims count (only runs if the claim won)
       await db.collection('users').doc(user.uid).set(
         { claims: firebase.firestore.FieldValue.increment(1) },
         { merge: true }
@@ -728,7 +734,16 @@
       }
     } catch (err) {
       console.error('Claim update failed:', err);
-      showToast('Error claiming listing. Please try again.', 'error');
+      if (err && err.message === 'already-claimed') {
+        showToast('Sorry, someone just claimed this one. 🐾', 'warning');
+        // Someone else got it — reflect that locally so the UI updates
+        const local = allListings.find(x => x.id === listingId);
+        if (local) local.status = 'claimed';
+      } else if (err && err.message === 'not-found') {
+        showToast('That listing is no longer available.', 'warning');
+      } else {
+        showToast('Error claiming listing. Please try again.', 'error');
+      }
       // Re-render restores the correct button state from current data
       renderListings();
       if (detailOpenId === listingId) openDetail(listingId);
@@ -737,10 +752,14 @@
 
   // ── Listing detail modal ─────────────────────────────────
   let detailOpenId = null;
+  let detailLastFocus = null;
 
   function openDetail(listingId) {
     const l = allListings.find(x => x.id === listingId);
     if (!l) return;
+    // Remember what was focused so we can restore it on close (unless we're
+    // just refreshing an already-open modal).
+    if (detailOpenId !== listingId) detailLastFocus = document.activeElement;
     detailOpenId = listingId;
 
     const overlay = document.getElementById('detail-overlay');
@@ -787,12 +806,20 @@
 
     overlay.classList.add('open');
     document.body.style.overflow = 'hidden';
+    // Move focus into the dialog (aria-modal does not move focus by itself).
+    const closeBtn = overlay.querySelector('.detail-close');
+    if (closeBtn) closeBtn.focus();
   }
 
   function closeDetail() {
     detailOpenId = null;
     document.getElementById('detail-overlay').classList.remove('open');
     document.body.style.overflow = '';
+    // Return focus to whatever opened the modal.
+    if (detailLastFocus && typeof detailLastFocus.focus === 'function') {
+      detailLastFocus.focus();
+    }
+    detailLastFocus = null;
   }
 
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetail(); });
