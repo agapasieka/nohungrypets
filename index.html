@@ -1113,6 +1113,11 @@
     'Fish':'🐟','Horse':'🐴','Farm animal':'🐄'
   };
 
+  // Show only the first name publicly, even if a full name was saved.
+  function firstName(full) {
+    return typeof full === 'string' && full.trim() ? full.trim().split(/\s+/)[0] : '';
+  }
+
   function formatTimeAgo(timestamp) {
     if (!timestamp) return 'Just now';
     const seconds = Math.floor((new Date() - timestamp.toDate()) / 1000);
@@ -1187,8 +1192,8 @@
             </div>
             <div class="listing-card-footer">
               <div class="user-info">
-                <div class="user-avatar" style="background:${avColor}">${l.posterName ? l.posterName.charAt(0).toUpperCase() : '?'}</div>
-                <span class="user-name">${l.posterName || 'Member'}</span>
+                <div class="user-avatar" style="background:${avColor}">${l.posterName ? l.posterName.trim().charAt(0).toUpperCase() : '?'}</div>
+                <span class="user-name">${firstName(l.posterName) || 'Member'}</span>
               </div>
               ${claimBtn}
             </div>

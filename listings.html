@@ -227,6 +227,59 @@
       .listings-grid.list-view .listing-card { flex-direction: column; }
       .listings-grid.list-view .listing-card-img { width: 100%; height: 120px; }
     }
+
+    /* Card is now a clickable element, not an <a> */
+    .listing-card { cursor: pointer; }
+    .listing-card:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+
+    /* ── Listing detail modal ── */
+    .detail-overlay {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(61,43,31,0.55); backdrop-filter: blur(2px);
+      display: none; align-items: center; justify-content: center; padding: 1.5rem;
+    }
+    .detail-overlay.open { display: flex; }
+    .detail-modal {
+      position: relative; background: #fff; border-radius: 24px;
+      max-width: 560px; width: 100%; max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 24px 60px rgba(61,43,31,0.3);
+    }
+    .detail-close {
+      position: absolute; top: 0.9rem; right: 0.9rem; z-index: 2;
+      width: 36px; height: 36px; border-radius: 50%; border: none; cursor: pointer;
+      background: rgba(255,255,255,0.9); color: var(--brown); font-size: 1rem;
+      box-shadow: 0 2px 8px rgba(61,43,31,0.18);
+    }
+    .detail-photo {
+      width: 100%; height: 240px; object-fit: cover;
+      border-radius: 24px 24px 0 0; display: block;
+    }
+    .detail-photo-emoji {
+      display: flex; align-items: center; justify-content: center;
+      font-size: 5rem; background: var(--cream);
+    }
+    .detail-content { padding: 1.5rem 1.75rem 1.75rem; }
+    .detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+    .detail-head h2 {
+      margin: 0; font-family: 'Fraunces', serif; color: var(--brown);
+      font-weight: 900; font-size: 1.5rem;
+    }
+    .detail-desc { color: var(--brown-mid); line-height: 1.6; margin: 1rem 0; }
+    .detail-muted { color: var(--muted); font-style: italic; }
+    .detail-rows { border-top: 1px solid var(--cream); padding-top: 0.5rem; margin-top: 0.5rem; }
+    .detail-row {
+      display: flex; justify-content: space-between; gap: 1rem;
+      padding: 0.5rem 0; border-bottom: 1px solid var(--cream);
+      color: var(--brown); font-size: 0.92rem;
+    }
+    .detail-label { color: var(--muted); font-weight: 600; }
+    .detail-poster { margin-top: 1rem; color: var(--brown-mid); font-size: 0.92rem; }
+    .detail-actions { margin-top: 1.25rem; }
+    .detail-actions .btn-claim, .detail-actions .btn-claimed { width: 100%; justify-content: center; }
+    @media (max-width: 600px) {
+      .detail-photo, .detail-photo-emoji { height: 190px; }
+      .detail-content { padding: 1.25rem; }
+    }
   </style>
 </head>
 <body>
@@ -365,6 +418,14 @@
   </div>
 </footer>
 
+<!-- Listing detail modal -->
+<div id="detail-overlay" class="detail-overlay" onclick="if(event.target===this)closeDetail()">
+  <div class="detail-modal" role="dialog" aria-modal="true" aria-label="Listing details">
+    <button class="detail-close" type="button" aria-label="Close" onclick="closeDetail()">✕</button>
+    <div id="detail-body"></div>
+  </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -394,6 +455,17 @@
     'Small pets':'🐹','Bird':'🐦','Reptile':'🦎',
     'Fish':'🐟','Horse':'🐴','Farm animal':'🐄'
   };
+
+  // Show only the first name publicly, even if a full name was saved.
+  function firstName(full) {
+    return typeof full === 'string' && full.trim() ? full.trim().split(/\s+/)[0] : '';
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
 
   async function loadListings() {
     try {
@@ -496,7 +568,9 @@
       let claimBtnText = 'Claim →';
       let claimBtnClass = 'btn-claim';
       let claimBtnDisabled = '';
-      let claimBtnOnClick = 'onclick="claimListing(event,this)"';
+      // Claim is triggered ONLY by the button, not by clicking the card.
+      // stopPropagation keeps the card's open-detail click from also firing.
+      let claimBtnOnClick = `onclick="event.stopPropagation(); claimListing(event, '${l.id}')"`;
 
       if (l.status === 'claimed') {
         badgeText = 'Claimed';
@@ -514,8 +588,12 @@
         claimBtnOnClick = '';
       }
 
+      const initial = l.posterName ? l.posterName.trim().charAt(0).toUpperCase() : '?';
+      // Clicking the card opens the detail modal; it no longer claims.
       return `
-        <a href="#" class="listing-card" data-listing-id="${l.id}" ${claimBtnOnClick}>
+        <div class="listing-card" data-listing-id="${l.id}" role="button" tabindex="0"
+             onclick="openDetail('${l.id}')"
+             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDetail('${l.id}')}">
           <div class="listing-card-img ${bgClass}">
             ${imgContent}
             <div class="listing-badge-wrap">
@@ -533,13 +611,13 @@
             </div>
             <div class="listing-card-footer">
               <div class="user-info">
-                <div class="user-avatar ${avClass}">${l.posterName ? l.posterName.charAt(0).toUpperCase() : '?'}</div>
-                <span class="user-name">${l.posterName || 'Guest'}</span>
+                <div class="user-avatar ${avClass}">${initial}</div>
+                <span class="user-name">${firstName(l.posterName) || 'Guest'}</span>
               </div>
-              <button class="${claimBtnClass}" ${claimBtnDisabled}>${claimBtnText}</button>
+              <button class="${claimBtnClass}" ${claimBtnDisabled} ${claimBtnOnClick}>${claimBtnText}</button>
             </div>
           </div>
-        </a>
+        </div>
       `;
     }).join('');
   }
@@ -576,121 +654,148 @@
     grid.classList.toggle('list-view', type === 'list');
   }
 
-  async function claimListing(e, card) {
-  console.log('claimListing function called!');
-  e.preventDefault();
-  const listingElement = card.closest('.listing-card');
-  if (!listingElement) return;
-
-  const listingId = listingElement.dataset.listingId;
-  if (!listingId) {
-    console.error('Listing ID not found');
-    showToast('Error claiming listing. Please try again.', 'error');
-    return;
-  }
-
-  const btn = listingElement.querySelector('.btn-claim');
-  if (!btn) return;
-
-  // Check user is logged in first
-  const user = firebase.auth().currentUser;
-  if (!user) {
-    showToast('Please log in to claim a listing 🐾', 'error');
-    setTimeout(() => window.location.href = '/login', 1500);
-    return;
-  }
-
-  // Update UI immediately
-  btn.textContent = '✓ Claimed!';
-  btn.className = 'btn-claimed';
-  btn.disabled = true;
-  const badge = listingElement.querySelector('.badge-available');
-  if (badge) { badge.textContent = 'Claimed'; badge.className = 'badge-gone'; }
-
-  try {
-    // Get the listinga first to get owner info and item name
-    const listingDoc = await db.collection('listings').doc(listingId).get();
-    if (!listingDoc.exists) {
-      throw new Error('Listing not found');
+  // Claim a listing by id. Triggered by the Claim button (on the card or in
+  // the detail modal) — never by clicking the card itself.
+  async function claimListing(e, listingId) {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    if (!listingId) {
+      showToast('Error claiming listing. Please try again.', 'error');
+      return;
     }
 
-    const listingData = listingDoc.data();
-    const ownerId = listingData.userId;
-    const itemName = listingData.itemName || 'Untitled Item';
+    // Must be logged in
+    const user = firebase.auth().currentUser;
+    if (!user) {
+      showToast('Please log in to claim a listing 🐾', 'error');
+      setTimeout(() => window.location.href = '/login', 1500);
+      return;
+    }
 
-    // Update the listing document to mark as claimed
-    await db.collection('listings').doc(listingId).update({
-      status: 'claimed',
-      claimedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    // Disable any visible claim buttons for this listing while we work
+    const buttons = Array.from(document.querySelectorAll('.btn-claim'))
+      .filter(b => b.dataset.listingId === listingId || b.closest(`[data-listing-id="${listingId}"]`));
+    buttons.forEach(b => { b.disabled = true; b.textContent = 'Claiming…'; });
 
-    // Increment user's claims count — set with merge works even if field/doc doesn't exist yet
-    await db.collection('users').doc(user.uid).set(
-      { claims: firebase.firestore.FieldValue.increment(1) },
-      { merge: true }
-    );
+    try {
+      const listingDoc = await db.collection('listings').doc(listingId).get();
+      if (!listingDoc.exists) throw new Error('Listing not found');
 
-    // Bump global claims counter (vanity metric for admin dashboard)
-    incrementGlobalStat('totalClaims');
+      const listingData = listingDoc.data();
+      const ownerId = listingData.userId;
+      const itemName = listingData.itemName || 'Untitled Item';
 
-    // Send automatic message to owner via messaging system
-    if (ownerId && ownerId !== user.uid) {
-      try {
-        console.log('Attempting to send automatic message from listings.html...');
-        console.log('Claimant ID:', user.uid);
-        console.log('Owner ID:', ownerId);
-        console.log('Listing ID:', listingId);
-        console.log('Item name:', itemName);
+      // Mark as claimed
+      await db.collection('listings').doc(listingId).update({
+        status: 'claimed',
+        claimedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
 
+      // Bump the claimant's own claims count
+      await db.collection('users').doc(user.uid).set(
+        { claims: firebase.firestore.FieldValue.increment(1) },
+        { merge: true }
+      );
+      incrementGlobalStat('totalClaims');
+
+      // Reflect the new status locally and re-render, then refresh the modal
+      const local = allListings.find(x => x.id === listingId);
+      if (local) local.status = 'claimed';
+      renderListings();
+      if (detailOpenId === listingId) openDetail(listingId);
+
+      // Notify the owner via the messaging system
+      if (ownerId && ownerId !== user.uid) {
         try {
-          console.log('Calling getOrCreateConversation...');
           const conversationId = await window.messaging.getOrCreateConversation(
-            user.uid,
-            ownerId,
-            listingId,
-            itemName
+            user.uid, ownerId, listingId, itemName
           );
-          console.log('getOrCreateConversation succeeded, Conversation ID:', conversationId);
-
           try {
-            console.log('Calling sendMessage...');
             await window.messaging.sendMessage(
-              conversationId,
-              user.uid,
+              conversationId, user.uid,
               `Hi! I've claimed your "${itemName}". Could we arrange a time for collection?`
             );
-            console.log('sendMessage succeeded');
             showToast('🐾 Listing claimed! Message sent to owner.', 'success');
           } catch (sendError) {
             console.error('Error in sendMessage:', sendError);
             showToast('🐾 Listing claimed! Could not send message.', 'warning');
           }
-
         } catch (convError) {
           console.error('Error in getOrCreateConversation:', convError);
           showToast('🐾 Listing claimed! Could not create conversation.', 'warning');
         }
-
-      } catch (messagingError) {
-        console.error('Error sending automatic message:', messagingError);
-        showToast('🐾 Listing claimed! Could not send automatic message.', 'warning');
+      } else {
+        showToast('🐾 Listing claimed!', 'success');
       }
-    } else {
-      showToast('🐾 Listing claimed!', 'success');
+    } catch (err) {
+      console.error('Claim update failed:', err);
+      showToast('Error claiming listing. Please try again.', 'error');
+      // Re-render restores the correct button state from current data
+      renderListings();
+      if (detailOpenId === listingId) openDetail(listingId);
     }
-
-  } catch (err) {
-    console.error('Claim update failed:', err);
-    showToast('Error claiming listing. Please try again.', 'error');
-
-    // Revert UI changes on error
-    btn.textContent = 'Claim →';
-    btn.className = 'btn-claim';
-    btn.disabled = false;
-    const badge2 = listingElement.querySelector('.badge-gone');
-    if (badge2) { badge2.textContent = 'Available'; badge2.className = 'badge-available'; }
   }
-}
+
+  // ── Listing detail modal ─────────────────────────────────
+  let detailOpenId = null;
+
+  function openDetail(listingId) {
+    const l = allListings.find(x => x.id === listingId);
+    if (!l) return;
+    detailOpenId = listingId;
+
+    const overlay = document.getElementById('detail-overlay');
+    const body = document.getElementById('detail-body');
+
+    const primaryAnimal = l.animals && l.animals.length ? l.animals[0] : null;
+    const emoji = animalEmojis[primaryAnimal] || '📦';
+    const hasPhoto = l.imageUrls && l.imageUrls.length > 0;
+    const media = hasPhoto
+      ? `<img src="${escapeHtml(l.imageUrls[0])}" alt="${escapeHtml(l.itemName)}" class="detail-photo">`
+      : `<div class="detail-photo detail-photo-emoji">${emoji}</div>`;
+
+    const animalTags = l.animals ? l.animals.map(a => `<span class="animal-tag">${escapeHtml(a)}</span>`).join('') : '';
+    const statusLabel = l.status === 'claimed' ? 'Claimed'
+                      : l.status === 'archived' ? 'Archived' : 'Available';
+    const statusClass = l.status === 'available' ? 'badge-available' : 'badge-gone';
+
+    const canClaim = l.status === 'available';
+    const claimBtn = canClaim
+      ? `<button class="btn-claim" data-listing-id="${l.id}" onclick="claimListing(event, '${l.id}')">Claim →</button>`
+      : `<button class="btn-claimed" disabled>${l.status === 'claimed' ? '✓ Claimed' : 'Unavailable'}</button>`;
+
+    const rows = [];
+    if (l.condition) rows.push(`<div class="detail-row"><span class="detail-label">Condition</span><span>${escapeHtml(l.condition)}</span></div>`);
+    if (l.category) rows.push(`<div class="detail-row"><span class="detail-label">Category</span><span>${escapeHtml(l.category)}</span></div>`);
+    rows.push(`<div class="detail-row"><span class="detail-label">Location</span><span>📍 ${escapeHtml(l.postcode || 'Nearby')}</span></div>`);
+    rows.push(`<div class="detail-row"><span class="detail-label">Posted</span><span>🕐 ${formatTimeAgo(l.createdAt)}</span></div>`);
+    if (l.pickupInstructions) rows.push(`<div class="detail-row"><span class="detail-label">Pickup</span><span>${escapeHtml(l.pickupInstructions)}</span></div>`);
+
+    body.innerHTML = `
+      ${media}
+      <div class="detail-content">
+        <div class="detail-head">
+          <h2>${escapeHtml(l.itemName || 'Untitled item')}</h2>
+          <span class="${statusClass}">${statusLabel}</span>
+        </div>
+        <div class="listing-animals">${animalTags}</div>
+        ${l.description ? `<p class="detail-desc">${escapeHtml(l.description)}</p>` : '<p class="detail-desc detail-muted">No description provided.</p>'}
+        <div class="detail-rows">${rows.join('')}</div>
+        <div class="detail-poster">Shared by <strong>${escapeHtml(firstName(l.posterName) || 'A member')}</strong></div>
+        <div class="detail-actions">${claimBtn}</div>
+      </div>
+    `;
+
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeDetail() {
+    detailOpenId = null;
+    document.getElementById('detail-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetail(); });
 
   window.addEventListener('DOMContentLoaded', loadListings);
 </script>
