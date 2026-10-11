@@ -118,8 +118,10 @@ async function collectResend() {
   const headers = { Authorization: `Bearer ${key}` };
   const now = new Date();
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const dayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
   let sentThisMonth = 0;
+  let sentToday = 0;
   let lastSendAt = null;
   let after = null;
   let capped = false;
@@ -144,6 +146,7 @@ async function collectResend() {
         if (d) {
           if (!lastSendAt || d > lastSendAt) lastSendAt = d;
           if (d >= monthStart) sentThisMonth++;
+          if (d >= dayStart) sentToday++;
         }
       }
 
@@ -153,6 +156,7 @@ async function collectResend() {
     }
     return {
       ok: true,
+      sentToday,
       sentThisMonth,
       lastSendAt: lastSendAt ? lastSendAt.toISOString() : null,
       capped

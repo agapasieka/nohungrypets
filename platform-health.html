@@ -77,7 +77,20 @@
     .checking { text-align: center; padding: 4rem 1rem; color: var(--muted); font-weight: 600; }
     .empty { padding: 1.25rem 0.75rem; color: var(--muted); font-weight: 500; }
     .hidden { display: none; }
-    .updated { font-size: 0.82rem; color: var(--muted); margin: 0 0 1.25rem; font-weight: 500; }
+    .updated { font-size: 0.82rem; color: var(--muted); margin: 0; font-weight: 600; }
+    .updated.stale { color: #b06a00; }
+    .updated.stale-bad { color: #a52a23; }
+    .health-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+    .toolbar { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+    .btn-small {
+      border: 1.5px solid var(--cream-dark, #e7ddcd); background: var(--cream);
+      color: var(--brown-mid); font-weight: 600; font-size: 0.82rem;
+      padding: 0.5rem 0.95rem; border-radius: 999px; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; white-space: nowrap; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 0.4rem;
+    }
+    .btn-small:hover { background: var(--cream-dark, #efe6d7); }
+    .btn-small[disabled] { opacity: 0.6; cursor: default; }
     @media (max-width: 700px) {
       .wrap { padding: 0 1.5rem 4rem; }
       .stat-grid, .links-grid { grid-template-columns: 1fr; }
@@ -108,7 +121,13 @@
   <div id="checking" class="checking">Checking access…</div>
 
   <div id="dashboard" class="hidden">
-    <p class="updated" id="updated">Loading…</p>
+    <div class="health-head">
+      <p class="updated" id="updated">Loading…</p>
+      <div class="toolbar">
+        <button type="button" class="btn-small" id="reload-btn">↻ Reload</button>
+        <a class="btn-small" id="refresh-btn" href="https://github.com/agapasieka/nohungrypets/actions/workflows/service-status.yml" target="_blank" rel="noopener">⟳ Refresh stats ↗</a>
+      </div>
+    </div>
 
     <!-- GitHub Actions -->
     <section class="card">
@@ -145,19 +164,19 @@
         <h2>✉️ Resend (email)</h2>
         <span class="status-pill"><span id="rs-dot" class="dot idle"></span><span id="rs-status">—</span></span>
       </div>
-      <p>Emails sent this month (message notifications + owner digest). Free tier: 100/day, 3,000/month.</p>
+      <p>Emails sent (message notifications + owner digest) against the free-tier limits: 100/day, 3,000/month.</p>
       <div class="stat-grid">
         <div class="stat-tile">
-          <div class="stat-num" id="rs-sent">—</div>
-          <div class="stat-label">Sent this month</div>
+          <div class="stat-num" id="rs-today">—</div>
+          <div class="stat-label">Today · /100</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-num" id="rs-month">—</div>
+          <div class="stat-label">This month · /3,000</div>
         </div>
         <div class="stat-tile">
           <div class="stat-num" id="rs-last">—</div>
           <div class="stat-label">Last send</div>
-        </div>
-        <div class="stat-tile">
-          <div class="stat-num" id="rs-cap">3,000</div>
-          <div class="stat-label">Monthly cap</div>
         </div>
       </div>
       <p class="note" id="rs-note"></p>
@@ -225,6 +244,16 @@
         timeZone: 'Europe/London'
       });
     } catch (_) { return '—'; }
+  }
+
+  function relAge(date) {
+    const min = Math.round((Date.now() - date.getTime()) / 60000);
+    if (min < 1) return 'just now';
+    if (min < 60) return min + ' min ago';
+    const hr = Math.round(min / 60);
+    if (hr < 24) return hr + ' hour' + (hr === 1 ? '' : 's') + ' ago';
+    const d = Math.round(hr / 24);
+    return d + ' day' + (d === 1 ? '' : 's') + ' ago';
   }
 
   function badgeClass(conclusion) {
@@ -301,19 +330,23 @@
     if (rs.ok === false) {
       setDot('rs-dot', 'warn');
       setText('rs-status', 'Unavailable');
-      setText('rs-sent', '!');
+      setText('rs-today', '!');
+      setText('rs-month', '!');
       setText('rs-last', '—');
       el('rs-note').textContent = rs.error ? ('Could not read Resend: ' + rs.error) : '';
       return;
     }
-    const sent = Number(rs.sentThisMonth || 0);
-    // Amber as we approach the 3,000/month free cap.
-    setDot('rs-dot', sent >= 2700 ? 'warn' : 'ok');
-    setText('rs-status', 'Sending');
-    setText('rs-sent', sent.toLocaleString('en-GB'));
+    const today = Number(rs.sentToday || 0);
+    const month = Number(rs.sentThisMonth || 0);
+    // Amber as we approach either free-tier cap (100/day, 3,000/month).
+    const nearCap = today >= 90 || month >= 2700;
+    setDot('rs-dot', nearCap ? 'warn' : 'ok');
+    setText('rs-status', nearCap ? 'Near limit' : 'Sending');
+    setText('rs-today', today + '/100');
+    setText('rs-month', month.toLocaleString('en-GB') + '/3,000');
     setText('rs-last', fmtDateTime(rs.lastSendAt));
     el('rs-note').textContent = rs.capped
-      ? 'Count covers the 500 most recent emails — actual monthly total may be higher.'
+      ? 'Monthly count covers the 500 most recent emails — the real total may be higher.'
       : '';
   }
 
@@ -327,10 +360,19 @@
         return;
       }
       const d = doc.data() || {};
+      const updEl = el('updated');
+      updEl.classList.remove('stale', 'stale-bad');
       const ts = d.updatedAt && d.updatedAt.toDate ? d.updatedAt.toDate() : null;
-      setText('updated', ts
-        ? 'Last checked ' + ts.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' })
-        : 'Last checked: unknown');
+      if (ts) {
+        const ageMs = Date.now() - ts.getTime();
+        const abs = ts.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' });
+        let txt = 'Last checked ' + abs + ' · ' + relAge(ts);
+        if (ageMs > 24 * 3600 * 1000) { updEl.classList.add('stale-bad'); txt += ' · ⚠ out of date'; }
+        else if (ageMs > 12 * 3600 * 1000) { updEl.classList.add('stale'); txt += ' · ⚠ may be stale'; }
+        setText('updated', txt);
+      } else {
+        setText('updated', 'Last checked: unknown');
+      }
       renderGitHub(d.github);
       renderResend(d.resend);
     } catch (err) {
@@ -338,6 +380,13 @@
       setText('updated', 'Could not load status data.');
     }
   }
+
+  // ── Reload: re-read the latest status doc without a page refresh ──
+  el('reload-btn').addEventListener('click', async () => {
+    const b = el('reload-btn');
+    b.disabled = true; b.textContent = '↻ Reloading…';
+    try { await load(); } finally { b.disabled = false; b.textContent = '↻ Reload'; }
+  });
 
   // ── Entry point ──────────────────────────────────────────
   auth.onAuthStateChanged(async (user) => {
