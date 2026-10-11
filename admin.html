@@ -164,6 +164,27 @@
     </section>
 
     <section class="card">
+      <div class="card-head">
+        <div>
+          <h2>Open reports</h2>
+          <p>Listings members have flagged for review.</p>
+        </div>
+        <span id="reports-count" class="btn-toggle" style="cursor:default">0</span>
+      </div>
+      <div class="table-scroll">
+        <table class="signups">
+          <thead>
+            <tr><th>Listing</th><th>Reason</th><th>Note</th><th>When</th><th></th></tr>
+          </thead>
+          <tbody id="report-rows">
+            <tr><td colspan="5" class="empty">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">Open a flagged listing on the site to review it, then resolve the report here. Resolving doesn't delete the listing — remove it from the member's profile or in Firebase if needed.</p>
+    </section>
+
+    <section class="card">
       <h2>Traffic &amp; behaviour</h2>
       <p>Page views, sessions, sources and device data are tracked with Firebase Analytics (GA4) and live in the Firebase / Google Analytics dashboard.</p>
       <div class="cta-row">
@@ -328,6 +349,71 @@
     }
   }
 
+  // ── Open reports ─────────────────────────────────────────
+  function formatWhen(ts) {
+    try {
+      const d = ts && typeof ts.toDate === 'function' ? ts.toDate() : null;
+      return d ? d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—';
+    } catch (_) { return '—'; }
+  }
+
+  async function loadReports() {
+    const tbody = document.getElementById('report-rows');
+    const countEl = document.getElementById('reports-count');
+    try {
+      const snap = await db.collection('reports').where('status', '==', 'open').get();
+      const rows = [];
+      snap.forEach(doc => rows.push({ id: doc.id, ...(doc.data() || {}) }));
+      rows.sort((a, b) => ((b.createdAt && b.createdAt.toMillis && b.createdAt.toMillis()) || 0)
+                        - ((a.createdAt && a.createdAt.toMillis && a.createdAt.toMillis()) || 0));
+      countEl.textContent = rows.length;
+      tbody.textContent = '';
+      if (!rows.length) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 5; td.className = 'empty'; td.textContent = 'No open reports. 🎉';
+        tr.appendChild(td); tbody.appendChild(tr);
+        return;
+      }
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        const title = document.createElement('td');
+        title.className = 'name'; title.textContent = safeText(r.listingTitle);
+        const reason = document.createElement('td'); reason.textContent = safeText(r.reason);
+        const note = document.createElement('td'); note.className = 'muted'; note.textContent = r.note ? safeText(r.note) : '—';
+        const when = document.createElement('td'); when.className = 'muted'; when.textContent = formatWhen(r.createdAt);
+        const action = document.createElement('td');
+        const btn = document.createElement('button');
+        btn.className = 'btn-toggle'; btn.type = 'button'; btn.textContent = 'Resolve';
+        btn.addEventListener('click', () => resolveReport(r.id, btn));
+        action.appendChild(btn);
+        tr.append(title, reason, note, when, action);
+        tbody.appendChild(tr);
+      });
+    } catch (err) {
+      console.error('Error loading reports:', err);
+      tbody.textContent = '';
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 5; td.className = 'empty'; td.textContent = 'Could not load reports.';
+      tr.appendChild(td); tbody.appendChild(tr);
+    }
+  }
+
+  async function resolveReport(id, btn) {
+    btn.disabled = true; btn.textContent = 'Resolving…';
+    try {
+      await db.collection('reports').doc(id).update({
+        status: 'resolved',
+        resolvedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      loadReports();
+    } catch (err) {
+      console.error('Resolve failed:', err);
+      btn.disabled = false; btn.textContent = 'Resolve';
+    }
+  }
+
   // ── Reveal / hide emails ─────────────────────────────────
   document.getElementById('toggle-emails').addEventListener('click', () => {
     emailsRevealed = !emailsRevealed;
@@ -346,6 +432,7 @@
     // Passed the gate — reveal the dashboard and load everything.
     document.getElementById('checking').classList.add('hidden');
     document.getElementById('dashboard').classList.remove('hidden');
+    loadReports();
     Promise.all([loadSignups(), loadListings()])
       .finally(() => document.getElementById('stat-grid').classList.remove('loading'));
   });
