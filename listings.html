@@ -276,6 +276,26 @@
     .detail-poster { margin-top: 1rem; color: var(--brown-mid); font-size: 0.92rem; }
     .detail-actions { margin-top: 1.25rem; }
     .detail-actions .btn-claim, .detail-actions .btn-claimed { width: 100%; justify-content: center; }
+    .detail-report { margin-top: 1rem; border-top: 1px solid var(--cream); padding-top: 0.75rem; }
+    .report-toggle {
+      background: none; border: none; cursor: pointer; padding: 0;
+      color: var(--muted); font-size: 0.82rem; font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .report-toggle:hover { color: var(--brown-mid); text-decoration: underline; }
+    .report-form { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.6rem; }
+    .report-form select, .report-form textarea {
+      width: 100%; padding: 0.55rem 0.7rem; border-radius: 10px;
+      border: 1px solid rgba(61,43,31,0.15); font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem; color: var(--brown); background: var(--cream); resize: vertical;
+    }
+    .btn-report-submit {
+      align-self: flex-start; border: none; cursor: pointer;
+      background: var(--cream-dark, #efe6d7); color: var(--brown);
+      font-weight: 700; font-size: 0.82rem; padding: 0.5rem 1rem; border-radius: 999px;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .btn-report-submit:hover { background: #e7ddcd; }
     @media (max-width: 600px) {
       .detail-photo, .detail-photo-emoji { height: 190px; }
       .detail-content { padding: 1.25rem; }
@@ -801,6 +821,20 @@
         <div class="detail-rows">${rows.join('')}</div>
         <div class="detail-poster">Shared by <strong>${escapeHtml(firstName(l.posterName) || 'A member')}</strong></div>
         <div class="detail-actions">${claimBtn}</div>
+        <div class="detail-report">
+          <button type="button" class="report-toggle" onclick="toggleReport()">⚑ Report this listing</button>
+          <div id="report-form" class="report-form" style="display:none">
+            <select id="report-reason" aria-label="Reason for report">
+              <option value="Inappropriate photo or content">Inappropriate photo or content</option>
+              <option value="Spam or scam">Spam or scam</option>
+              <option value="Offensive or abusive">Offensive or abusive</option>
+              <option value="Wrong or duplicate listing">Wrong or duplicate listing</option>
+              <option value="Other">Other</option>
+            </select>
+            <textarea id="report-note" rows="2" maxlength="500" placeholder="Anything else? (optional)"></textarea>
+            <button type="button" class="btn-report-submit" onclick="submitReport()">Submit report</button>
+          </div>
+        </div>
       </div>
     `;
 
@@ -823,6 +857,40 @@
   }
 
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetail(); });
+
+  // ── Report a listing ─────────────────────────────────────
+  function toggleReport() {
+    const form = document.getElementById('report-form');
+    if (form) form.style.display = form.style.display === 'none' ? 'flex' : 'none';
+  }
+
+  async function submitReport() {
+    const user = firebase.auth().currentUser;
+    if (!user) { showToast('Please log in to report a listing.', 'error'); return; }
+    if (!detailOpenId) return;
+    const l = allListings.find(x => x.id === detailOpenId);
+    const reasonEl = document.getElementById('report-reason');
+    const noteEl = document.getElementById('report-note');
+    const btn = document.querySelector('.btn-report-submit');
+    if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+    try {
+      await db.collection('reports').add({
+        listingId: detailOpenId,
+        listingTitle: (l && typeof l.itemName === 'string') ? l.itemName.slice(0, 140) : '',
+        reason: reasonEl ? reasonEl.value : 'Other',
+        note: noteEl ? noteEl.value.trim().slice(0, 500) : '',
+        reporterId: user.uid,
+        status: 'open',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      showToast('Thanks — reported. We\'ll take a look. 🐾', 'success');
+      closeDetail();
+    } catch (err) {
+      console.error('Report failed:', err);
+      showToast('Could not send the report. Please try again.', 'error');
+      if (btn) { btn.disabled = false; btn.textContent = 'Submit report'; }
+    }
+  }
 
   window.addEventListener('DOMContentLoaded', loadListings);
 </script>
