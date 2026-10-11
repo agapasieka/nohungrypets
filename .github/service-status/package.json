@@ -1,0 +1,10 @@
+{
+  "name": "nohungrypets-service-status",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Scheduled job: collect GitHub Actions and Resend status into a Firestore doc for the /platform-health dashboard.",
+  "type": "commonjs",
+  "dependencies": {
+    "firebase-admin": "^12.7.0"
+  }
+}
