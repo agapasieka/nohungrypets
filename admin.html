@@ -143,6 +143,38 @@
     </section>
 
     <section class="card">
+      <h2>Listings &amp; activity</h2>
+      <p>The past 7 days of activity, plus the current state of every listing. Counted live from the database.</p>
+      <div class="stat-grid loading" id="health-grid">
+        <div class="stat-tile">
+          <div class="stat-num" id="stat-signups-7d">—</div>
+          <div class="stat-label">New signups · 7d</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-num" id="stat-listings-7d">—</div>
+          <div class="stat-label">New listings · 7d</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-num" id="stat-claimed-7d">—</div>
+          <div class="stat-label">Claimed · 7d</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-num" id="stat-archived">—</div>
+          <div class="stat-label">Archived</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-num" id="stat-stale">—</div>
+          <div class="stat-label">Stale · 30d+</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-num" id="stat-claim-rate">—</div>
+          <div class="stat-label">Claim rate</div>
+        </div>
+      </div>
+      <p class="note">“Stale” = still available but posted over 30 days ago — candidates to archive. “Claim rate” = items claimed ÷ all listings.</p>
+    </section>
+
+    <section class="card">
       <div class="card-head">
         <div>
           <h2>Recent signups</h2>
@@ -270,6 +302,11 @@
 
   let emailsRevealed = false;
 
+  // Rolling windows for the activity metrics.
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const WEEK_MS = 7 * DAY_MS;
+  const STALE_MS = 30 * DAY_MS;
+
   const setTile = (id, val) => { document.getElementById(id).textContent = val; };
 
   function signupMessage(text) {
@@ -319,13 +356,21 @@
     try {
       const snap = await db.collection('users').get();
       setTile('stat-users', snap.size);
+      const weekAgo = Date.now() - WEEK_MS;
+      let new7d = 0;
       const rows = [];
-      snap.forEach(doc => rows.push(doc.data() || {}));
+      snap.forEach(doc => {
+        const u = doc.data() || {};
+        if (createdMillis(u.createdAt) >= weekAgo) new7d++;
+        rows.push(u);
+      });
+      setTile('stat-signups-7d', new7d);
       rows.sort((a, b) => createdMillis(b.createdAt) - createdMillis(a.createdAt));
       renderSignups(rows.slice(0, 10));
     } catch (err) {
       console.error('Error loading signups:', err);
       setTile('stat-users', '!');
+      setTile('stat-signups-7d', '!');
       signupMessage('Could not load signups.');
     }
   }
@@ -334,18 +379,38 @@
   async function loadListings() {
     try {
       const snap = await db.collection('listings').get();
-      let available = 0, claimed = 0;
+      const now = Date.now();
+      const weekAgo = now - WEEK_MS;
+      const staleBefore = now - STALE_MS;
+      let available = 0, claimed = 0, archived = 0;
+      let new7d = 0, claimed7d = 0, stale = 0;
       snap.forEach(doc => {
-        const status = (doc.data() || {}).status;
-        if (status === 'available') available++;
-        else if (status === 'claimed') claimed++;
+        const l = doc.data() || {};
+        const status = l.status;
+        const created = createdMillis(l.createdAt);
+        if (status === 'available') {
+          available++;
+          if (created && created < staleBefore) stale++;
+        } else if (status === 'claimed') {
+          claimed++;
+          if (createdMillis(l.claimedAt) >= weekAgo) claimed7d++;
+        } else if (status === 'archived') {
+          archived++;
+        }
+        if (created >= weekAgo) new7d++;
       });
+      const total = snap.size;
       setTile('stat-listings', available);
       setTile('stat-claims', claimed);
+      setTile('stat-listings-7d', new7d);
+      setTile('stat-claimed-7d', claimed7d);
+      setTile('stat-archived', archived);
+      setTile('stat-stale', stale);
+      setTile('stat-claim-rate', total ? Math.round((claimed / total) * 100) + '%' : '0%');
     } catch (err) {
       console.error('Error loading listing totals:', err);
-      setTile('stat-listings', '!');
-      setTile('stat-claims', '!');
+      ['stat-listings', 'stat-claims', 'stat-listings-7d', 'stat-claimed-7d',
+       'stat-archived', 'stat-stale', 'stat-claim-rate'].forEach(id => setTile(id, '!'));
     }
   }
 
@@ -434,7 +499,10 @@
     document.getElementById('dashboard').classList.remove('hidden');
     loadReports();
     Promise.all([loadSignups(), loadListings()])
-      .finally(() => document.getElementById('stat-grid').classList.remove('loading'));
+      .finally(() => {
+        document.getElementById('stat-grid').classList.remove('loading');
+        document.getElementById('health-grid').classList.remove('loading');
+      });
   });
 </script>
 </body>
