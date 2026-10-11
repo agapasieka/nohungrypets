@@ -38,6 +38,48 @@ To keep the database clean, listings support an auto-archiving flow:
 - This applies a badge to the listing but leaves it visible for 24 hours.
 - When the owner visits their Profile page, the app quietly checks all of their claimed listings in the background. If any have been claimed for more than 24 hours, the app auto-archives them to save space. (Note: Due to Cloudinary security limits, the images are kept in Cloudinary, but the tiny compressed files will take years to reach the 25 GB limit).
 
+## Admin dashboard
+
+An admin-only dashboard at `/admin`, gated by Firebase Auth. Who may see it is
+decided by the `admins` collection — an account qualifies only if a document
+exists at `admins/{their-uid}` (created in the Firebase Console, never from the
+app), and `firestore.rules` enforces the same check server-side.
+
+- **Community totals** — live counts of signups, active listings and items claimed.
+- **Listings & activity** — last-7-day signups/listings/claims, archived count, "stale" (available 30+ days) count, and claim rate.
+- **Recent signups** — the 10 newest members, emails masked by default.
+- **Open reports** — listings members have flagged, resolvable inline (see Moderation).
+- Links out to Firebase Analytics (GA4) and the Platform health dashboard.
+
+## Moderation & reporting
+
+- Signed-in members can **report a listing** from its detail view (reason + optional note).
+- Reports are write-only for members and readable/resolvable only by admins (`reports` collection in `firestore.rules`); they appear in the admin "Open reports" table.
+- Image uploads aren't auto-screened — reporting plus manual removal is the free moderation path.
+
+## Account deletion (GDPR)
+
+- Members can permanently delete their account from **Profile → Delete account**.
+- After re-authentication it removes their listings and profile document, then the Firebase Auth account itself.
+- Shared conversations and Cloudinary images are left for a periodic server-side cleanup, since deleting them would affect other members.
+
+## Platform health dashboard
+
+An admin-only status page at `/platform-health` — one view of the services the
+site runs on, behind the same Firebase login as `/admin`.
+
+- A scheduled GitHub Actions job (`.github/service-status/`, every 6h + manual) collects status **server-side** and writes a single `_meta/serviceStatus` doc to Firestore; the page just reads that doc, so no secret ever touches the public page.
+- **GitHub Actions** tile — latest run of each workflow, failing count, open Dependabot alerts.
+- **Resend** tile — emails sent today (/100) and this month (/3,000), plus last-send time.
+- **Vendor status links** — GitHub, Resend, Cloudinary, Firebase, Google Cloud, OpenStreetMap, postcodes.io.
+- **↻ Reload** re-reads the data instantly; **⟳ Refresh stats** opens the GitHub run page to trigger a fresh collect.
+- Reuses the `FIREBASE_SA_KEY` secret; reads Resend with a dedicated full-access `RESEND_READ_API_KEY` (a send-only key can't list emails).
+
+> **Note:** security-rule changes only take effect once `firestore.rules` is
+> published — via the "Deploy Firestore Rules" workflow or a manual publish in
+> the Firebase Console. If a new collection's rule isn't live, admin pages can't
+> read it.
+
 ## Marketing Automation
 
 A free, zero-billing-account pipeline drafts Facebook posts (and the
@@ -74,11 +116,12 @@ with **Actions → Message Notifier → Run workflow**.
 
 ## Automated PR Reviews
 
-[CodeRabbit](https://coderabbit.ai) reviews every pull request automatically
-(free forever for public repos, no billing account) — config in
-[`.coderabbit.yaml`](.coderabbit.yaml). Complements the existing
+Every pull request is reviewed automatically by **Claude** (Haiku) via the
+[`claude-review.yml`](.github/workflows/claude-review.yml) workflow — it runs the
+`code-review` plugin and authenticates with a Claude subscription OAuth token
+(`CLAUDE_CODE_OAUTH_TOKEN`), so there's no API billing. Complements the existing
 [CodeQL](https://github.com/agapasieka/nohungrypets/security/code-scanning)
-and [gitleaks](.github/workflows/gitleaks.yml) checks: CodeRabbit reviews
+and [gitleaks](.github/workflows/gitleaks.yml) checks: Claude reviews
 logic/style/simplification, CodeQL scans for vulnerability patterns, gitleaks
 scans for accidentally committed secrets.
 
