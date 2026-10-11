@@ -12,7 +12,9 @@
 //   FIREBASE_SA_KEY    - full JSON of a Firebase service account key
 //   GITHUB_TOKEN       - provided automatically by Actions (reads workflow runs)
 //   GITHUB_REPOSITORY  - "owner/repo", provided automatically by Actions
-//   RESEND_API_KEY     - Resend API key (same one the email jobs use)
+//   RESEND_READ_API_KEY - Resend full-access key, dedicated to this dashboard
+//                         (needed to LIST emails; a send-only key gets 401).
+//                         Falls back to RESEND_API_KEY if not set.
 
 const admin = require('firebase-admin');
 
@@ -112,8 +114,10 @@ function parseResendDate(s) {
 }
 
 async function collectResend() {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) return { ok: false, error: 'RESEND_API_KEY not set' };
+  // Prefer the dashboard's own full-access key; fall back to the shared one.
+  // Listing emails needs Full access — a send-only key returns 401.
+  const key = process.env.RESEND_READ_API_KEY || process.env.RESEND_API_KEY;
+  if (!key) return { ok: false, error: 'RESEND_READ_API_KEY not set' };
 
   const headers = { Authorization: `Bearer ${key}` };
   const now = new Date();
