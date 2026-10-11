@@ -156,6 +156,49 @@ async function logOut() {
   window.location.href = '/';
 }
 
+// ── ACCOUNT DELETION (GDPR right to erasure) ─────────────
+// Re-authenticate the current user. Deleting an account requires a recent
+// login, so callers must run this (with the user's password) first. Google
+// accounts re-auth via a popup instead.
+async function reauthenticateUser(password) {
+  const user = auth.currentUser;
+  if (!user) throw new Error('not-signed-in');
+  const providerId = (user.providerData[0] && user.providerData[0].providerId) || 'password';
+  if (providerId === 'google.com') {
+    await user.reauthenticateWithPopup(googleProvider);
+  } else {
+    const cred = firebase.auth.EmailAuthProvider.credential(user.email, password);
+    await user.reauthenticateWithCredential(cred);
+  }
+}
+
+// Permanently delete the signed-in user's account and personal data:
+// their listings, their profile document, then the Auth account itself.
+// Call reauthenticateUser() immediately before this.
+// Note: shared conversations/messages are left in place (deleting them would
+// also remove the other participant's history); and Cloudinary images aren't
+// removable from the client with an unsigned preset — both are handled by a
+// periodic server-side cleanup rather than here.
+async function deleteAccountAndData() {
+  const user = auth.currentUser;
+  if (!user) throw new Error('not-signed-in');
+  const uid = user.uid;
+
+  // 1. Delete the user's listings (batched; a user won't exceed the 500 cap).
+  const listingsSnap = await db.collection('listings').where('userId', '==', uid).get();
+  if (!listingsSnap.empty) {
+    const batch = db.batch();
+    listingsSnap.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+  }
+
+  // 2. Delete the user's profile document.
+  await db.collection('users').doc(uid).delete().catch(() => {});
+
+  // 3. Delete the Firebase Auth account (needs the recent re-auth above).
+  await user.delete();
+}
+
 // ── PASSWORD RESET ───────────────────────────────────────
 async function resetPassword(email) {
   try {

@@ -624,7 +624,7 @@
           <div style="font-weight:600;color:var(--brown);font-size:0.9rem">Delete account</div>
           <div style="font-size:0.78rem;color:var(--muted)">Permanently delete your account and all listings</div>
         </div>
-        <button class="btn-sm btn-sm-delete" onclick="showToast('Please contact us to delete your account.', 'error')">Delete</button>
+        <button class="btn-sm btn-sm-delete" onclick="openDeleteAccount()">Delete</button>
       </div>
     </div>
 
@@ -1146,5 +1146,61 @@
     return Math.floor(seconds) + " seconds ago";
   }
   </script>
+
+<!-- Delete-account confirmation -->
+<div id="delete-overlay" style="position:fixed;inset:0;z-index:1000;background:rgba(61,43,31,0.55);display:none;align-items:center;justify-content:center;padding:1.5rem" onclick="if(event.target===this)closeDeleteAccount()">
+  <div role="dialog" aria-modal="true" aria-label="Delete account" style="background:#fff;border-radius:20px;max-width:440px;width:100%;padding:1.75rem;box-shadow:0 24px 60px rgba(61,43,31,0.3);font-family:'DM Sans',sans-serif">
+    <h3 style="margin:0 0 0.5rem;font-family:'Fraunces',serif;color:var(--brown);font-weight:900;font-size:1.3rem">Delete your account?</h3>
+    <p style="color:var(--brown-mid);line-height:1.6;font-size:0.9rem;margin:0 0 1rem">
+      This permanently deletes your account, your profile and all your listings. It can't be undone.
+    </p>
+    <div id="delete-password-wrap" style="margin-bottom:1rem">
+      <label for="delete-password" style="display:block;font-size:0.8rem;color:var(--muted);font-weight:600;margin-bottom:0.35rem">Confirm your password</label>
+      <input type="password" id="delete-password" placeholder="Your password" autocomplete="current-password" style="width:100%;padding:0.7rem 0.9rem;border-radius:10px;border:1px solid rgba(61,43,31,0.15);font-family:'DM Sans',sans-serif">
+    </div>
+    <p id="delete-google-note" style="display:none;color:var(--brown-mid);font-size:0.82rem;margin:0 0 1rem">You'll be asked to confirm with Google.</p>
+    <div style="display:flex;gap:0.6rem;justify-content:flex-end">
+      <button class="btn-secondary" type="button" onclick="closeDeleteAccount()" style="padding:0.6rem 1.2rem;font-size:0.88rem">Cancel</button>
+      <button id="delete-confirm-btn" type="button" onclick="confirmDeleteAccount()" style="padding:0.6rem 1.2rem;font-size:0.88rem;border:none;border-radius:999px;cursor:pointer;color:#fff;background:#C4542A;font-weight:700">Permanently delete</button>
+    </div>
+  </div>
+</div>
+<script>
+  function openDeleteAccount() {
+    const user = firebase.auth().currentUser;
+    if (!user) { showToast('Please log in first.', 'error'); return; }
+    const isGoogle = (user.providerData[0] && user.providerData[0].providerId) === 'google.com';
+    document.getElementById('delete-password-wrap').style.display = isGoogle ? 'none' : 'block';
+    document.getElementById('delete-google-note').style.display = isGoogle ? 'block' : 'none';
+    const pw = document.getElementById('delete-password'); if (pw) pw.value = '';
+    document.getElementById('delete-overlay').style.display = 'flex';
+  }
+  function closeDeleteAccount() {
+    document.getElementById('delete-overlay').style.display = 'none';
+  }
+  async function confirmDeleteAccount() {
+    const btn = document.getElementById('delete-confirm-btn');
+    const pw = document.getElementById('delete-password');
+    const orig = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Deleting…';
+    try {
+      await reauthenticateUser(pw ? pw.value : '');
+      await deleteAccountAndData();
+      // user.delete() signs the user out; send them home.
+      window.location.href = '/';
+    } catch (err) {
+      console.error('Account deletion failed:', err);
+      let msg = 'Could not delete your account. Please try again.';
+      if (err && (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential')) msg = 'Incorrect password.';
+      else if (err && err.code === 'auth/too-many-requests') msg = 'Too many attempts. Please wait and try again.';
+      else if (err && (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request')) msg = 'Confirmation cancelled.';
+      showToast(msg, 'error');
+      btn.disabled = false; btn.textContent = orig;
+    }
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeDeleteAccount();
+  });
+</script>
 </body>
 </html>
