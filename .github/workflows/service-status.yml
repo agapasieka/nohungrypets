@@ -35,6 +35,9 @@ jobs:
         run: node collect.js
         env:
           FIREBASE_SA_KEY: ${{ secrets.FIREBASE_SA_KEY }}
+          # Dedicated full-access key for the dashboard (reads the email list).
+          # Falls back in collect.js to RESEND_API_KEY if this isn't set.
+          RESEND_READ_API_KEY: ${{ secrets.RESEND_READ_API_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # GITHUB_REPOSITORY is provided automatically by Actions.
