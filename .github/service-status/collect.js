@@ -55,32 +55,44 @@ async function collectGitHub() {
   };
 
   try {
-    const res = await fetch(
-      `https://api.github.com/repos/${repo}/actions/runs?per_page=100`,
+    // Track real workflow FILES by their stable name, not individual run
+    // names. GitHub lets a run set a dynamic name (a PR title, "Push on
+    // master", a Dependabot update job), so grouping by run name clutters the
+    // dashboard with one-off rows. Listing the workflow files and taking each
+    // one's latest run gives a clean row per maintenance workflow.
+    const wfRes = await fetch(
+      `https://api.github.com/repos/${repo}/actions/workflows?per_page=100`,
       { headers }
     );
-    if (!res.ok) {
-      return { ok: false, error: `Actions API ${res.status}` };
+    if (!wfRes.ok) {
+      return { ok: false, error: `Workflows API ${wfRes.status}` };
     }
-    const body = await res.json();
-    const runs = Array.isArray(body.workflow_runs) ? body.workflow_runs : [];
+    const wfBody = await wfRes.json();
+    const files = (Array.isArray(wfBody.workflows) ? wfBody.workflows : [])
+      .filter(w => w.state === 'active');
 
-    // Runs come back newest-first, so the first run seen for a workflow name
-    // is its most recent one.
-    const latestByWorkflow = new Map();
-    for (const r of runs) {
-      if (!latestByWorkflow.has(r.name)) {
-        latestByWorkflow.set(r.name, {
-          name: r.name,
-          conclusion: r.conclusion || r.status || 'unknown',
-          when: r.updated_at || r.created_at || null,
-          url: r.html_url || null
-        });
-      }
+    const workflows = [];
+    for (const w of files) {
+      let run = null;
+      try {
+        const rRes = await fetch(
+          `https://api.github.com/repos/${repo}/actions/workflows/${w.id}/runs?per_page=1`,
+          { headers }
+        );
+        if (rRes.ok) {
+          const rBody = await rRes.json();
+          run = (Array.isArray(rBody.workflow_runs) ? rBody.workflow_runs : [])[0] || null;
+        }
+      } catch (_) { /* skip this workflow's latest-run lookup */ }
+      if (!run) continue; // never run → nothing to show
+      workflows.push({
+        name: w.name,
+        conclusion: run.conclusion || run.status || 'unknown',
+        when: run.updated_at || run.created_at || null,
+        url: run.html_url || null
+      });
     }
-    const workflows = Array.from(latestByWorkflow.values())
-      .sort((a, b) => (b.when || '').localeCompare(a.when || ''))
-      .slice(0, 12);
+    workflows.sort((a, b) => (b.when || '').localeCompare(a.when || ''));
     const failedCount = workflows.filter(w => w.conclusion === 'failure').length;
 
     // Open Dependabot alerts — best-effort; the token may lack permission,
