@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 2026 NoHungryPets -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Platform health – NoHungryPets</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#E8733A">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .wrap { max-width: 1000px; margin: 0 auto; padding: 0 2.5rem 5rem; }
+    .card {
+      background: white; border-radius: 24px; padding: 2rem;
+      box-shadow: var(--card-shadow); margin-bottom: 1.5rem;
+    }
+    .card h2 {
+      margin: 0 0 0.35rem;
+      font-family: 'Fraunces', serif; color: var(--brown);
+      font-weight: 900; font-size: 1.4rem;
+    }
+    .card > p { margin: 0 0 1rem; color: var(--brown-mid); font-weight: 500; line-height: 1.6; }
+
+    .card-head {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 1rem; flex-wrap: wrap; margin-bottom: 0.5rem;
+    }
+    .card-head h2 { margin: 0; }
+
+    /* Status dot + label */
+    .dot { display: inline-block; width: 0.7rem; height: 0.7rem; border-radius: 50%; background: var(--muted); flex: none; }
+    .dot.ok   { background: #2e9e5b; }
+    .dot.bad  { background: #d6453d; }
+    .dot.warn { background: #e0a21a; }
+    .dot.idle { background: #b9b2a6; }
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      font-weight: 600; font-size: 0.85rem; color: var(--brown-mid);
+      background: var(--cream); border-radius: 999px; padding: 0.4rem 0.85rem;
+    }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; margin-top: 0.5rem; }
+    .stat-tile { text-align: center; padding: 1.5rem 1rem; background: var(--cream); border-radius: 18px; }
+    .stat-num { font-family: 'Fraunces', serif; font-size: 2.2rem; font-weight: 900; color: var(--orange); line-height: 1; }
+    .stat-label { font-size: 0.78rem; color: var(--muted); font-weight: 600; margin-top: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    .table-scroll { overflow-x: auto; margin: 0 -0.5rem; }
+    table.rows { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+    table.rows th, table.rows td { text-align: left; padding: 0.7rem 0.75rem; vertical-align: middle; }
+    table.rows thead th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 700; border-bottom: 2px solid var(--cream); }
+    table.rows tbody tr { border-bottom: 1px solid var(--cream); }
+    table.rows tbody tr:last-child { border-bottom: none; }
+    table.rows td.name { font-weight: 600; color: var(--brown); }
+    table.rows td.muted { color: var(--muted); white-space: nowrap; }
+
+    .badge { display: inline-block; font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 999px; text-transform: capitalize; }
+    .badge.success { background: #e3f3e8; color: #1f6b3e; }
+    .badge.failure { background: #fbe4e2; color: #a52a23; }
+    .badge.other   { background: #f0ece3; color: #7a7266; }
+
+    .links-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+    .vlink {
+      display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+      padding: 0.9rem 1.1rem; background: var(--cream); border-radius: 14px;
+      text-decoration: none; color: var(--brown); font-weight: 600;
+    }
+    .vlink:hover { background: var(--cream-dark, #efe6d7); }
+    .vlink span.arrow { color: var(--muted); font-weight: 400; }
+
+    .note { font-size: 0.8rem; color: var(--muted); margin: 0.85rem 0 0; }
+    .cta-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.5rem; }
+    .checking { text-align: center; padding: 4rem 1rem; color: var(--muted); font-weight: 600; }
+    .empty { padding: 1.25rem 0.75rem; color: var(--muted); font-weight: 500; }
+    .hidden { display: none; }
+    .updated { font-size: 0.82rem; color: var(--muted); margin: 0 0 1.25rem; font-weight: 500; }
+    @media (max-width: 700px) {
+      .wrap { padding: 0 1.5rem 4rem; }
+      .stat-grid, .links-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">🐾 No<span>Hungry</span>Pets</a>
+  <div class="nav-links">
+    <a href="/admin">Admin</a>
+    <a href="/listings">Browse listings</a>
+    <a href="/profile">My account</a>
+    <a href="/" class="btn-nav">Back to site</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="page-header-inner">
+    <div class="page-tag">✦ Admin</div>
+    <h1>Platform <em>health</em></h1>
+    <p>Status of the services NoHungryPets runs on. Visible to admins only.</p>
+  </div>
+</div>
+
+<main class="wrap">
+  <div id="checking" class="checking">Checking access…</div>
+
+  <div id="dashboard" class="hidden">
+    <p class="updated" id="updated">Loading…</p>
+
+    <!-- GitHub Actions -->
+    <section class="card">
+      <div class="card-head">
+        <h2>⚙️ GitHub Actions</h2>
+        <span class="status-pill"><span id="gh-dot" class="dot idle"></span><span id="gh-status">—</span></span>
+      </div>
+      <p>Latest run of each workflow, plus open dependency alerts.</p>
+      <div class="stat-grid">
+        <div class="stat-tile">
+          <div class="stat-num" id="gh-failed">—</div>
+          <div class="stat-label">Failing workflows</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-num" id="gh-alerts">—</div>
+          <div class="stat-label">Dependabot alerts</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-num" id="gh-total">—</div>
+          <div class="stat-label">Workflows tracked</div>
+        </div>
+      </div>
+      <div class="table-scroll" style="margin-top:1rem">
+        <table class="rows">
+          <thead><tr><th>Workflow</th><th>Last result</th><th>When</th><th></th></tr></thead>
+          <tbody id="gh-rows"><tr><td colspan="4" class="empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Resend -->
+    <section class="card">
+      <div class="card-head">
+        <h2>✉️ Resend (email)</h2>
+        <span class="status-pill"><span id="rs-dot" class="dot idle"></span><span id="rs-status">—</span></span>
+      </div>
+      <p>Emails sent this month (message notifications + owner digest). Free tier: 100/day, 3,000/month.</p>
+      <div class="stat-grid">
+        <div class="stat-tile">
+          <div class="stat-num" id="rs-sent">—</div>
+          <div class="stat-label">Sent this month</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-num" id="rs-last">—</div>
+          <div class="stat-label">Last send</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-num" id="rs-cap">3,000</div>
+          <div class="stat-label">Monthly cap</div>
+        </div>
+      </div>
+      <p class="note" id="rs-note"></p>
+    </section>
+
+    <!-- Vendor status pages -->
+    <section class="card">
+      <h2>🔌 Vendor status pages</h2>
+      <p>Official status pages — check these first if something looks broken but the numbers above are stale.</p>
+      <div class="links-grid">
+        <a class="vlink" href="https://www.githubstatus.com" target="_blank" rel="noopener">GitHub <span class="arrow">↗</span></a>
+        <a class="vlink" href="https://resend-status.com" target="_blank" rel="noopener">Resend <span class="arrow">↗</span></a>
+        <a class="vlink" href="https://status.cloudinary.com" target="_blank" rel="noopener">Cloudinary <span class="arrow">↗</span></a>
+        <a class="vlink" href="https://status.firebase.google.com" target="_blank" rel="noopener">Firebase <span class="arrow">↗</span></a>
+        <a class="vlink" href="https://status.cloud.google.com" target="_blank" rel="noopener">Google Cloud <span class="arrow">↗</span></a>
+      </div>
+      <div class="cta-row" style="margin-top:1.25rem">
+        <a class="btn-primary" href="https://github.com/agapasieka/nohungrypets/actions/workflows/service-status.yml" target="_blank" rel="noopener">Run status check now →</a>
+        <a class="btn-secondary" href="/admin">Back to admin</a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <a href="/" class="footer-logo">🐾 No<span>Hungry</span>Pets</a>
+    <div class="footer-copy">© 2026 NoHungryPets.co.uk · Helping pets eat, one bowl at a time 🐾</div>
+  </div>
+</footer>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/main.js"></script>
+<script>
+  // ── Admin gate (same model as /admin) ────────────────────
+  async function isAdmin(uid) {
+    try {
+      const doc = await db.collection('admins').doc(uid).get();
+      return doc.exists;
+    } catch (err) {
+      console.error('Admin check failed:', err);
+      return false;
+    }
+  }
+
+  const el = id => document.getElementById(id);
+  const setText = (id, v) => { el(id).textContent = v; };
+
+  function setDot(id, state) {
+    el(id).className = 'dot ' + state;
+  }
+
+  function fmtDateTime(iso) {
+    if (!iso) return '—';
+    try {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return '—';
+      return d.toLocaleString('en-GB', {
+        day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+        timeZone: 'Europe/London'
+      });
+    } catch (_) { return '—'; }
+  }
+
+  function badgeClass(conclusion) {
+    if (conclusion === 'success') return 'success';
+    if (conclusion === 'failure') return 'failure';
+    return 'other';
+  }
+
+  function renderGitHub(gh) {
+    gh = gh || {};
+    if (gh.ok === false && gh.error) {
+      setDot('gh-dot', 'warn');
+      setText('gh-status', 'Unavailable');
+    } else {
+      const failed = Number(gh.failedCount || 0);
+      setDot('gh-dot', failed === 0 ? 'ok' : 'bad');
+      setText('gh-status', failed === 0 ? 'All green' : `${failed} failing`);
+    }
+    setText('gh-failed', gh.error ? '!' : Number(gh.failedCount || 0));
+    setText('gh-alerts', (gh.alerts === null || gh.alerts === undefined) ? '—' : gh.alerts);
+    const workflows = Array.isArray(gh.workflows) ? gh.workflows : [];
+    setText('gh-total', gh.error ? '!' : workflows.length);
+
+    const tbody = el('gh-rows');
+    tbody.textContent = '';
+    if (gh.error) {
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 4; td.className = 'empty';
+      td.textContent = 'Could not read GitHub status (' + gh.error + ').';
+      tr.appendChild(td); tbody.appendChild(tr);
+      return;
+    }
+    if (!workflows.length) {
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 4; td.className = 'empty'; td.textContent = 'No workflow runs found.';
+      tr.appendChild(td); tbody.appendChild(tr);
+      return;
+    }
+    workflows.forEach(w => {
+      const tr = document.createElement('tr');
+
+      const name = document.createElement('td');
+      name.className = 'name'; name.textContent = w.name || '—';
+
+      const result = document.createElement('td');
+      const badge = document.createElement('span');
+      const concl = w.conclusion || 'unknown';
+      badge.className = 'badge ' + badgeClass(concl);
+      badge.textContent = concl;
+      result.appendChild(badge);
+
+      const when = document.createElement('td');
+      when.className = 'muted'; when.textContent = fmtDateTime(w.when);
+
+      const link = document.createElement('td');
+      if (w.url) {
+        const a = document.createElement('a');
+        a.href = w.url; a.target = '_blank'; a.rel = 'noopener';
+        a.textContent = 'View ↗'; a.style.color = 'var(--orange)'; a.style.fontWeight = '600';
+        link.appendChild(a);
+      } else {
+        link.textContent = '—'; link.className = 'muted';
+      }
+
+      tr.append(name, result, when, link);
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderResend(rs) {
+    rs = rs || {};
+    if (rs.ok === false) {
+      setDot('rs-dot', 'warn');
+      setText('rs-status', 'Unavailable');
+      setText('rs-sent', '!');
+      setText('rs-last', '—');
+      el('rs-note').textContent = rs.error ? ('Could not read Resend: ' + rs.error) : '';
+      return;
+    }
+    const sent = Number(rs.sentThisMonth || 0);
+    // Amber as we approach the 3,000/month free cap.
+    setDot('rs-dot', sent >= 2700 ? 'warn' : 'ok');
+    setText('rs-status', 'Sending');
+    setText('rs-sent', sent.toLocaleString('en-GB'));
+    setText('rs-last', fmtDateTime(rs.lastSendAt));
+    el('rs-note').textContent = rs.capped
+      ? 'Count covers the 500 most recent emails — actual monthly total may be higher.'
+      : '';
+  }
+
+  async function load() {
+    try {
+      const doc = await db.collection('_meta').doc('serviceStatus').get();
+      if (!doc.exists) {
+        setText('updated', 'No data yet — the collector runs every 6 hours. Use “Run status check now” below for an immediate result.');
+        renderGitHub({ error: 'no data yet' });
+        renderResend({ ok: false, error: 'no data yet' });
+        return;
+      }
+      const d = doc.data() || {};
+      const ts = d.updatedAt && d.updatedAt.toDate ? d.updatedAt.toDate() : null;
+      setText('updated', ts
+        ? 'Last checked ' + ts.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' })
+        : 'Last checked: unknown');
+      renderGitHub(d.github);
+      renderResend(d.resend);
+    } catch (err) {
+      console.error('Error loading service status:', err);
+      setText('updated', 'Could not load status data.');
+    }
+  }
+
+  // ── Entry point ──────────────────────────────────────────
+  auth.onAuthStateChanged(async (user) => {
+    if (!user) { window.location.href = '/login'; return; }
+    if (!(await isAdmin(user.uid))) { window.location.href = '/'; return; }
+    el('checking').classList.add('hidden');
+    el('dashboard').classList.remove('hidden');
+    load();
+  });
+</script>
+</body>
+</html>

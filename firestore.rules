@@ -38,6 +38,13 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
+    // Service-status snapshot for the /platform-health dashboard. Written only
+    // by the server-side collector (Firebase Admin SDK, which bypasses rules);
+    // readable by admins so the dashboard can display it. No client writes.
+    match /_meta/serviceStatus {
+      allow read: if isAdmin();
+    }
+
     match /listings/{listingId} {
       allow read: if true;
       allow delete: if request.auth != null
