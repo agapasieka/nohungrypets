@@ -63,6 +63,13 @@ app), and `firestore.rules` enforces the same check server-side.
 - After re-authentication it removes their listings and profile document, then the Firebase Auth account itself.
 - Shared conversations and Cloudinary images are left for a periodic server-side cleanup, since deleting them would affect other members.
 
+## Email verification & welcome email
+
+- New email/password members are sent a **Firebase verification email** at signup — this doubles as the **welcome email** (its wording and sender are set in the Firebase Console email template, so no Resend or domain setup is needed; Firebase sends it).
+- **Soft flow — nothing is blocked.** The signup toast asks them to check their inbox, and a dismissible "please verify your email" banner (with a **Resend** button, in `js/main.js`) shows site-wide to signed-in **unverified** password accounts. Google sign-ins are already verified, so they never see it.
+- **Template wording:** Firebase Console → Authentication → Templates → *Email address verification* (edit subject/sender/body; `%DISPLAY_NAME%` and `%LINK%` are filled in automatically).
+- **Optional — send from your own domain:** on that template, use *Customize domain* to send from `noreply@nohungrypets.co.uk` (add the TXT + CNAME records it shows at your DNS; a domain can have only one `v=spf1` record, so merge rather than add a second).
+
 ## Platform health dashboard
 
 An admin-only status page at `/platform-health` — one view of the services the
