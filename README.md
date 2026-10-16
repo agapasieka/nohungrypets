@@ -67,7 +67,7 @@ app), and `firestore.rules` enforces the same check server-side.
 
 - New email/password members are sent a **Firebase verification email** at signup — this doubles as the **welcome email** (its wording and sender are set in the Firebase Console email template, so no Resend or domain setup is needed; Firebase sends it).
 - **Soft flow — nothing is blocked.** The signup toast asks them to check their inbox, and a dismissible "please verify your email" banner (with a **Resend** button, in `js/main.js`) shows site-wide to signed-in **unverified** password accounts. Google sign-ins are already verified, so they never see it.
-- **Template wording:** Firebase Console → Authentication → Templates → *Email address verification* (edit subject/sender/body; `%DISPLAY_NAME%` and `%LINK%` are filled in automatically).
+- **Branding the email:** Firebase Console → Authentication → Templates → *Email address verification*. Firebase **locks the message body** (anti-spam), so you can only set the **Subject**, **Sender name** (use `NoHungryPets`), **From**, **Reply-to** and **Action URL**. The body's "Your `%APP_NAME%` team" line comes from **Project settings → General → Public-facing name**, so set that to `NoHungryPets`. For a fully custom-worded/branded welcome email, use a separate Resend job instead.
 - **Optional — send from your own domain:** on that template, use *Customize domain* to send from `noreply@nohungrypets.co.uk` (add the TXT + CNAME records it shows at your DNS; a domain can have only one `v=spf1` record, so merge rather than add a second).
 
 ## Platform health dashboard
