@@ -108,6 +108,15 @@ async function signUp(name, email, password, postcode) {
     });
     // Update display name
     await result.user.updateProfile({ displayName: name });
+    // Send a verification email — this doubles as the welcome email (its
+    // wording/sender are set in the Firebase Console email template). Soft
+    // flow: we don't block the user; a banner (js/main.js) nudges them to
+    // verify. Non-fatal — a send failure must not break signup.
+    try {
+      await result.user.sendEmailVerification({ url: 'https://nohungrypets.co.uk/login' });
+    } catch (verifyErr) {
+      console.warn('Could not send verification email:', verifyErr);
+    }
     // Bump global signup counter (vanity metric for admin dashboard)
     await incrementGlobalStat('totalUsers');
     return { success: true, user: result.user };

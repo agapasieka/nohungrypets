@@ -231,3 +231,63 @@ function showToast(msg, type = 'success') {
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 3000);
 }
+
+// ── EMAIL VERIFICATION NUDGE (soft) ──────────────────────
+// Shows a gentle, dismissible banner to signed-in members who haven't
+// verified their email yet. Email/password signups only — Google accounts
+// are already verified, so they never see it. Soft flow: nothing is blocked;
+// this just nudges. The verification email itself is sent at signup
+// (js/auth.js) and again via the "Resend" button here.
+(function emailVerificationBanner() {
+  if (typeof auth === 'undefined' || !auth || !auth.onAuthStateChanged) return;
+
+  auth.onAuthStateChanged(user => {
+    const existing = document.getElementById('verify-email-banner');
+    const isPasswordUser = !!(user && Array.isArray(user.providerData)
+      && user.providerData.some(p => p && p.providerId === 'password'));
+
+    // Remove the banner if it no longer applies (signed out, verified, or
+    // a Google account).
+    if (!user || user.emailVerified || !isPasswordUser) {
+      if (existing) existing.remove();
+      return;
+    }
+    // Respect a per-session dismissal and don't duplicate.
+    try { if (sessionStorage.getItem('nhp-verify-dismissed') === '1') return; } catch (_) {}
+    if (existing) return;
+
+    const banner = document.createElement('div');
+    banner.id = 'verify-email-banner';
+    banner.style.cssText = `
+      background:#FFF3E6; border-bottom:1px solid #F0D9BE; color:#7A5C4A;
+      font-family:'DM Sans',system-ui,sans-serif; font-size:0.92rem; font-weight:500;
+      padding:0.7rem 1.25rem; display:flex; align-items:center; justify-content:center;
+      gap:0.75rem; flex-wrap:wrap; text-align:center;`;
+    banner.innerHTML = `
+      <span>📧 Please verify your email to secure your account — check your inbox.</span>
+      <button id="verify-resend" type="button" style="background:#E8733A;color:#fff;border:none;border-radius:999px;padding:0.35rem 0.9rem;font-weight:600;cursor:pointer;font-family:inherit;">Resend email</button>
+      <button id="verify-dismiss" type="button" style="background:none;border:none;color:#9A8578;cursor:pointer;font-weight:600;font-family:inherit;">Dismiss</button>`;
+
+    const nav = document.querySelector('nav');
+    if (nav && nav.parentNode) nav.insertAdjacentElement('afterend', banner);
+    else document.body.insertBefore(banner, document.body.firstChild);
+
+    banner.querySelector('#verify-resend').addEventListener('click', async (e) => {
+      const btn = e.target;
+      btn.disabled = true; btn.textContent = 'Sending…';
+      try {
+        await auth.currentUser.sendEmailVerification({ url: 'https://nohungrypets.co.uk/login' });
+        showToast('Verification email sent — check your inbox. 📧', 'success');
+        btn.textContent = 'Sent ✓';
+      } catch (err) {
+        console.error('Resend verification failed:', err);
+        showToast('Could not send right now — please try again shortly.', 'error');
+        btn.disabled = false; btn.textContent = 'Resend email';
+      }
+    });
+    banner.querySelector('#verify-dismiss').addEventListener('click', () => {
+      try { sessionStorage.setItem('nhp-verify-dismissed', '1'); } catch (_) {}
+      banner.remove();
+    });
+  });
+})();
