@@ -5,6 +5,6 @@
   "description": "Scheduled job: collect GitHub Actions and Resend status into a Firestore doc for the /platform-health dashboard.",
   "type": "commonjs",
   "dependencies": {
-    "firebase-admin": "^12.7.0"
+    "firebase-admin": "^14.0.0"
   }
 }
