@@ -1,8 +1,7 @@
 name: Claude Code Review
 
 # Automatic PR review by Claude (Haiku), via the official claude-code-action.
-# Runs alongside CodeRabbit for now. Unlike CodeRabbit's free tier, this runs
-# on every PR regardless of repo stars.
+# Runs on every PR, regardless of repo stars.
 #
 # Auth: a Claude subscription OAuth token (no API billing). Generate it once
 # locally with `claude setup-token` and add it as the CLAUDE_CODE_OAUTH_TOKEN
