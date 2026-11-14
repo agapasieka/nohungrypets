@@ -132,6 +132,17 @@ and [gitleaks](.github/workflows/gitleaks.yml) checks: Claude reviews
 logic/style/simplification, CodeQL scans for vulnerability patterns, gitleaks
 scans for accidentally committed secrets.
 
+## Security
+
+Found a vulnerability? Please report it privately, as described in
+[SECURITY.md](SECURITY.md).
+
+This repo runs layered, automated guardrails: secret scanning with push
+protection plus gitleaks, CodeQL, OpenSSF Scorecard, Renovate for dependency
+updates, SHA-pinned actions, least-privilege workflow permissions and branch
+protection. The full setup, and why each piece is there, is written up in
+[The security guardrails I put on every public GitHub repo](https://agnieszkapasieka.medium.com/the-security-guardrails-i-put-on-every-public-github-repo-5ae60074857e).
+
 ## Signup Flow Diagram
 
 Here is a diagram illustrating the signup process and how it integrates with Firebase:
