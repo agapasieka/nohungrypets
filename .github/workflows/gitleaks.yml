@@ -29,6 +29,7 @@ concurrency:
 
 jobs:
   scan:
+    name: gitleaks-scan # status-check name used by branch protection
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
