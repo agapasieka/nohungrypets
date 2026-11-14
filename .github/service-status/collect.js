@@ -16,7 +16,8 @@
 //                         (needed to LIST emails; a send-only key gets 401).
 //                         Falls back to RESEND_API_KEY if not set.
 
-const admin = require('firebase-admin');
+const { initializeApp, cert } = require('firebase-admin/app');
+const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -35,8 +36,8 @@ try {
   process.exit(1);
 }
 
-admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-const db = admin.firestore();
+const app = initializeApp({ credential: cert(serviceAccount) });
+const db = getFirestore(app);
 const STATUS_REF = db.collection('_meta').doc('serviceStatus');
 
 // ── GitHub Actions ────────────────────────────────────────
@@ -174,7 +175,7 @@ async function main() {
   const [github, resend] = await Promise.all([collectGitHub(), collectResend()]);
 
   await STATUS_REF.set({
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
     github,
     resend
   });
