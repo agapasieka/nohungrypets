@@ -1049,6 +1049,9 @@
     // undocumented /maps/search/<path text> form - avoids mixing literal
     // "+" characters with encodeURIComponent's %20 in the same segment.
     const mapsSearch = (query) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+    // The typed text is shown in the labels below, so escape it for HTML
+    // (CodeQL js/xss-through-dom). The map URLs use encodeURIComponent instead.
+    const safeInput = escapeHtml(input);
     document.getElementById('donation-results').innerHTML = `
       <div style="display:flex;flex-direction:column;gap:0.75rem">
         <a href="${mapsSearch(`pet food bank near ${input}`)}"
@@ -1057,7 +1060,7 @@
           onmouseover="this.style.background='var(--warm)'" onmouseout="this.style.background='var(--cream)'">
           <div style="font-size:1.5rem">🗺️</div>
           <div>
-            <div style="font-weight:700;color:var(--brown);font-size:0.9rem">Pet food banks near ${input}</div>
+            <div style="font-weight:700;color:var(--brown);font-size:0.9rem">Pet food banks near ${safeInput}</div>
             <div style="font-size:0.78rem;color:var(--muted)">Search on Google Maps →</div>
           </div>
         </a>
@@ -1067,7 +1070,7 @@
           onmouseover="this.style.background='var(--warm)'" onmouseout="this.style.background='var(--cream)'">
           <div style="font-size:1.5rem">🏠</div>
           <div>
-            <div style="font-weight:700;color:var(--brown);font-size:0.9rem">Animal shelters near ${input}</div>
+            <div style="font-weight:700;color:var(--brown);font-size:0.9rem">Animal shelters near ${safeInput}</div>
             <div style="font-size:0.78rem;color:var(--muted)">Search on Google Maps →</div>
           </div>
         </a>
@@ -1077,7 +1080,7 @@
           onmouseover="this.style.background='var(--warm)'" onmouseout="this.style.background='var(--cream)'">
           <div style="font-size:1.5rem">🐾</div>
           <div>
-            <div style="font-weight:700;color:var(--brown);font-size:0.9rem">RSPCA near ${input}</div>
+            <div style="font-weight:700;color:var(--brown);font-size:0.9rem">RSPCA near ${safeInput}</div>
             <div style="font-size:0.78rem;color:var(--muted)">Search on Google Maps →</div>
           </div>
         </a>
