@@ -16,7 +16,8 @@
  * free Firebase Spark plan. See ../README.md for the exact setup commands.
  */
 
-const admin = require('firebase-admin');
+const { initializeApp, cert } = require('firebase-admin/app');
+const { getFirestore } = require('firebase-admin/firestore');
 
 let app = null;
 
@@ -41,16 +42,16 @@ function getDb(databaseId = '(default)') {
   if (!app) {
     const serviceAccount = loadServiceAccount();
     app = serviceAccount
-      ? admin.initializeApp({
-          credential: admin.credential.cert(serviceAccount),
+      ? initializeApp({
+          credential: cert(serviceAccount),
           projectId: serviceAccount.project_id,
         })
-      : admin.initializeApp(); // Application Default Credentials (local dev).
+      : initializeApp(); // Application Default Credentials (local dev).
   }
   // firebase-admin >= 11 supports named databases; '(default)' is the default.
   return databaseId && databaseId !== '(default)'
-    ? admin.firestore(app, databaseId)
-    : admin.firestore(app);
+    ? getFirestore(app, databaseId)
+    : getFirestore(app);
 }
 
 /**

@@ -13,7 +13,8 @@
 //   FROM_EMAIL       - sender (optional; defaults to Resend's sandbox address)
 //   DIGEST_TO        - where to send the digest (required)
 
-const admin = require('firebase-admin');
+const { initializeApp, cert } = require('firebase-admin/app');
+const { getFirestore, Timestamp } = require('firebase-admin/firestore');
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -37,8 +38,8 @@ try {
   process.exit(1);
 }
 
-admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-const db = admin.firestore();
+const app = initializeApp({ credential: cert(serviceAccount) });
+const db = getFirestore(app);
 const META_REF = db.collection('_meta').doc('ownerDigest');
 
 // How far back to look on the very first run (no stored checkpoint yet).
@@ -79,7 +80,7 @@ async function main() {
   const metaSnap = await META_REF.get();
   const since = (metaSnap.exists && toDate(metaSnap.data().lastDigest))
     || new Date(Date.now() - FIRST_RUN_LOOKBACK_MS);
-  const sinceTs = admin.firestore.Timestamp.fromDate(since);
+  const sinceTs = Timestamp.fromDate(since);
 
   // New signups, new listings, and conversation activity since the last digest.
   // Single-field range indexes (createdAt / lastUpdated) are automatic.
@@ -114,7 +115,7 @@ async function main() {
   // Nothing happened — skip the email but still advance the checkpoint.
   if (signups.length === 0 && listings.length === 0 && activeConversations === 0) {
     console.log('Nothing new since last digest; no email sent.');
-    await META_REF.set({ lastDigest: admin.firestore.Timestamp.fromDate(now) }, { merge: true });
+    await META_REF.set({ lastDigest: Timestamp.fromDate(now) }, { merge: true });
     return;
   }
 
@@ -150,7 +151,7 @@ async function main() {
   await sendEmail(subject, parts.join('\n'));
   console.log(`Digest sent to ${DIGEST_TO}: ${signups.length} signups, ${listings.length} listings, ${activeConversations} active conversations.`);
 
-  await META_REF.set({ lastDigest: admin.firestore.Timestamp.fromDate(now) }, { merge: true });
+  await META_REF.set({ lastDigest: Timestamp.fromDate(now) }, { merge: true });
 }
 
 main()

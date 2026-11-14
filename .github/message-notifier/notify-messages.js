@@ -17,7 +17,8 @@
 // other members, verify nohungrypets.co.uk in Resend and set FROM_EMAIL to an
 // address on that domain (e.g. notifications@nohungrypets.co.uk).
 
-const admin = require('firebase-admin');
+const { initializeApp, cert } = require('firebase-admin/app');
+const { getFirestore, Timestamp } = require('firebase-admin/firestore');
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -40,8 +41,8 @@ try {
   process.exit(1);
 }
 
-admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-const db = admin.firestore();
+const app = initializeApp({ credential: cert(serviceAccount) });
+const db = getFirestore(app);
 const META_REF = db.collection('_meta').doc('messageNotifier');
 
 // How far back to look on the very first run (no stored checkpoint yet).
@@ -97,7 +98,7 @@ async function main() {
   // Conversations touched since the last run (single-field range index is
   // automatic). Admin access bypasses security rules.
   const snap = await db.collection('conversations')
-    .where('lastUpdated', '>', admin.firestore.Timestamp.fromDate(lastCheck))
+    .where('lastUpdated', '>', Timestamp.fromDate(lastCheck))
     .get();
 
   // Group the unread conversations by the member who needs to hear about them.
@@ -174,7 +175,7 @@ async function main() {
   console.log(`Checked ${snap.size} updated conversation(s); emailed ${sent} member(s).`);
 
   await META_REF.set(
-    { lastCheck: admin.firestore.Timestamp.fromDate(checkpoint) },
+    { lastCheck: Timestamp.fromDate(checkpoint) },
     { merge: true }
   );
 }
