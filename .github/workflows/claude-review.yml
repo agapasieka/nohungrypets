@@ -27,6 +27,10 @@ concurrency:
 
 jobs:
   review:
+    # Skip PRs opened by bots (Renovate, Dependabot). The action refuses
+    # non-human actors and fails, and that failed check blocks Renovate's
+    # automerge of minor/patch updates. A skipped job doesn't block merging.
+    if: github.event.pull_request.user.type != 'Bot'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
