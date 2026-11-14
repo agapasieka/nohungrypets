@@ -21,7 +21,6 @@ on:
 
 permissions:
   contents: read
-  security-events: write # to upload results to the Security tab
 
 concurrency:
   group: gitleaks-${{ github.ref }}
@@ -30,6 +29,9 @@ concurrency:
 jobs:
   scan:
     name: gitleaks-scan # status-check name used by branch protection
+    permissions:
+      contents: read
+      security-events: write # to upload results to the Security tab
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

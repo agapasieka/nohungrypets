@@ -16,9 +16,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
-  issues: write
-  id-token: write
 
 concurrency:
   group: claude-review-${{ github.event.pull_request.number }}
@@ -26,6 +23,11 @@ concurrency:
 
 jobs:
   review:
+    permissions:
+      contents: read
+      pull-requests: write # post the review and inline comments
+      issues: write # update the confirmation comment
+      id-token: write # required by claude-code-action
     # Skip PRs opened by bots (Renovate, Dependabot). The action refuses
     # non-human actors and fails, and that failed check blocks Renovate's
     # automerge of minor/patch updates. A skipped job doesn't block merging.
