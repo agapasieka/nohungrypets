@@ -668,8 +668,8 @@
   </a>
   <div class="nav-links">
     <a href="#how">How it works</a>
-    <a href="#listings">Browse listings</a>
-    <a href="#map">Find nearby</a>
+    <a href="/listings">Browse listings</a>
+    <a href="/map">Find nearby</a>
     <a href="/listings" class="nav-bell" id="nav-bell" style="display:none;" title="New listings near you" aria-label="New listings near you">
       🔔<span class="nav-bell-badge" id="nav-bell-count">0</span>
     </a>
@@ -686,7 +686,7 @@
       <p>Share surplus pet food, supplies and treats with animal owners nearby. Give what you can, take what you need — completely free, always.</p>
       <div class="hero-ctas">
         <a href="#" class="btn-primary" onclick="window.location.href='/login'">Create free account</a>
-        <a href="#listings" class="btn-secondary">Browse listings nearby</a>
+        <a href="/listings" class="btn-secondary">Browse listings nearby</a>
       </div>
       <div class="hero-stats">
         <div class="stat">
@@ -1431,5 +1431,40 @@
 })();
 </script>
 
+<script>
+  // Keep on-page section links (e.g. "How it works" -> #how) working as a
+  // smooth scroll, but without leaving a "#section" hash in the address bar.
+  (function () {
+    function stripHash() {
+      if (window.history && history.replaceState) {
+        history.replaceState(null, '', location.pathname + location.search);
+      }
+    }
+
+    // In-page clicks (nav/footer on the homepage itself).
+    document.addEventListener('click', function (e) {
+      var link = e.target.closest('a[href^="#"]');
+      if (!link) return;
+      var href = link.getAttribute('href');
+      if (href === '#' || href.length < 2) return; // "#" placeholders have their own onclick
+      var target = document.getElementById(href.slice(1));
+      if (!target) return; // not an in-page anchor on this page
+      e.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    // Arrivals from another page via "/#how": scroll to the section, then
+    // clean the hash out of the URL.
+    if (location.hash.length > 1) {
+      var incoming = document.getElementById(location.hash.slice(1));
+      if (incoming) {
+        window.addEventListener('load', function () {
+          incoming.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          setTimeout(stripHash, 400);
+        });
+      }
+    }
+  })();
+</script>
 </body>
 </html>
