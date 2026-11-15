@@ -1,0 +1,116 @@
+name: Deploy to Firebase Hosting
+
+# Runs in parallel with pages.yml during the GitHub Pages -> Firebase Hosting
+# migration. Every push to master deploys the site to Firebase Hosting
+# (https://nohungrypets.web.app) as well as to GitHub Pages; nohungrypets.co.uk
+# keeps pointing at GitHub Pages until DNS is switched over.
+#
+# Same-repo pull requests get a temporary preview channel (expires after 7
+# days); its URL is written to the job summary. PRs from forks are skipped
+# because they can't read repository secrets.
+#
+# Needs the FIREBASE_HOSTING_DEPLOYER_KEY secret: a JSON key for a service
+# account with the "Firebase Hosting Admin" role. Kept separate from
+# FIREBASE_RULES_DEPLOYER_KEY so each key can only deploy one thing. Until
+# the secret exists, both jobs skip with a notice rather than failing.
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-live:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: firebase-hosting-live
+      cancel-in-progress: false
+    steps:
+      - name: Check for deploy key
+        id: key
+        run: |
+          if [ -z "$FIREBASE_HOSTING_DEPLOYER_KEY" ]; then
+            echo "::notice::FIREBASE_HOSTING_DEPLOYER_KEY is not set - skipping Firebase Hosting deploy."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          FIREBASE_HOSTING_DEPLOYER_KEY: ${{ secrets.FIREBASE_HOSTING_DEPLOYER_KEY }}
+
+      - name: Checkout
+        if: steps.key.outputs.ready == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The repo root is the deploy root - don't leave a token in .git/config.
+          persist-credentials: false
+
+      - name: Write service account key
+        if: steps.key.outputs.ready == 'true'
+        run: |
+          umask 077
+          echo "$FIREBASE_HOSTING_DEPLOYER_KEY" > "$RUNNER_TEMP/firebase-key.json"
+        env:
+          FIREBASE_HOSTING_DEPLOYER_KEY: ${{ secrets.FIREBASE_HOSTING_DEPLOYER_KEY }}
+
+      - name: Deploy to live channel
+        if: steps.key.outputs.ready == 'true'
+        run: |
+          npx --yes firebase-tools@13 deploy --only hosting --project nohungrypets \
+            --non-interactive --message "${GITHUB_SHA::7}"
+          echo "Deployed ${GITHUB_SHA::7} to https://nohungrypets.web.app" >> "$GITHUB_STEP_SUMMARY"
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-key.json
+
+  preview:
+    if: >-
+      github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    concurrency:
+      group: firebase-hosting-preview-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    steps:
+      - name: Check for deploy key
+        id: key
+        run: |
+          if [ -z "$FIREBASE_HOSTING_DEPLOYER_KEY" ]; then
+            echo "::notice::FIREBASE_HOSTING_DEPLOYER_KEY is not set - skipping preview deploy."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          FIREBASE_HOSTING_DEPLOYER_KEY: ${{ secrets.FIREBASE_HOSTING_DEPLOYER_KEY }}
+
+      - name: Checkout
+        if: steps.key.outputs.ready == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The repo root is the deploy root - don't leave a token in .git/config.
+          persist-credentials: false
+
+      - name: Write service account key
+        if: steps.key.outputs.ready == 'true'
+        run: |
+          umask 077
+          echo "$FIREBASE_HOSTING_DEPLOYER_KEY" > "$RUNNER_TEMP/firebase-key.json"
+        env:
+          FIREBASE_HOSTING_DEPLOYER_KEY: ${{ secrets.FIREBASE_HOSTING_DEPLOYER_KEY }}
+
+      - name: Deploy preview channel
+        if: steps.key.outputs.ready == 'true'
+        run: |
+          npx --yes firebase-tools@13 hosting:channel:deploy "pr-$PR_NUMBER" \
+            --expires 7d --project nohungrypets --non-interactive --json > deploy.json
+          url=$(jq -r '.result[].url' deploy.json)
+          echo "Preview for PR #$PR_NUMBER: $url (expires in 7 days)" >> "$GITHUB_STEP_SUMMARY"
+          echo "::notice::Preview: $url"
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-key.json
+          PR_NUMBER: ${{ github.event.pull_request.number }}

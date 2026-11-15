@@ -2,6 +2,41 @@
   "firestore": {
     "rules": "firestore.rules"
   },
+  "hosting": {
+    "public": ".",
+    "cleanUrls": true,
+    "trailingSlash": false,
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/.*/**",
+      "**/node_modules/**",
+      ".github/**",
+      "marketing-agent/**",
+      "test/**",
+      "README.md",
+      "SECURITY.md",
+      "LICENSE",
+      "CNAME",
+      "package.json",
+      "package-lock.json",
+      "renovate.json",
+      "firestore.rules",
+      "*.log",
+      "to-do-list.md"
+    ],
+    "headers": [
+      {
+        "source": "**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=600"
+          }
+        ]
+      }
+    ]
+  },
   "emulators": {
     "auth": {
       "port": 9099
